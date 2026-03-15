@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>삼영건강증진회</title>
+    <style>
+        :root { --primary: #3498db; --danger: #e74c3c; --success: #2ecc71; --dark: #2c3e50; --bg: #f0f2f5; }
+        body { font-family: 'Pretendard', sans-serif; padding: 10px; background: var(--bg); color: var(--dark); margin: 0; }
+        .container { max-width: 100%; margin: 0 auto; background: white; padding: 15px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.08); }
+        
+        h2 { text-align: center; font-size: 1.2rem; margin: 10px 0; letter-spacing: -1px; }
+        .timer { text-align: center; font-size: 0.9rem; color: var(--danger); font-weight: bold; margin-bottom: 15px; background: #fff5f5; padding: 8px; border-radius: 8px; }
+        
+        /* 모바일 입력 패널 최적화 */
+        .admin-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px; padding: 12px; background: #f8f9fa; border-radius: 12px; }
+        select, input, button { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd; font-size: 15px; box-sizing: border-box; }
+        .date-box { grid-column: span 2; display: flex; align-items: center; background: white; border: 1px solid #ddd; border-radius: 8px; padding: 0 10px; }
+        #exerciseDate { border: none; flex-grow: 1; }
+        button { background: var(--primary); color: white; border: none; cursor: pointer; font-weight: bold; }
+        .btn-reset { background: #95a5a6; font-size: 12px; grid-column: span 2; margin-top: 5px; }
+
+        /* 테이블 모바일 스크롤 */
+        .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 10px; border: 1px solid #eee; }
+        table { width: 100%; border-collapse: collapse; min-width: 550px; font-size: 14px; }
+        th, td { padding: 12px 5px; border-bottom: 1px solid #eee; text-align: center; }
+        th { background: #f8f9fa; color: #666; font-size: 12px; }
+        
+        .day-check { font-size: 11px; color: #ddd; margin: 0 1px; }
+        .day-check.active { color: var(--success); font-weight: bold; border-bottom: 2px solid var(--success); }
+        .monthly-fine { background: #fef9e7; font-weight: bold; }
+
+        /* 하단 요약 */
+        .footer-stats { margin-top: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .stat-box { padding: 12px; border-radius: 10px; background: #f1f8ff; text-align: center; }
+        .stat-box.money { background: #fff5f5; }
+        .stat-val { font-size: 1.1rem; font-weight: bold; display: block; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2 id="dynamic-title">삼영건강증진회</h2>
+    <div class="timer" id="countdown">계산 중...</div>
+    
+    <div class="admin-panel">
+        <select id="nameSelect"></select>
+        <button onclick="recordExercise()">기록하기</button>
+        <div class="date-box">
+            <input type="date" id="exerciseDate" onchange="updateDayLabel()">
+            <span id="dayLabel"></span>
+        </div>
+        <button class="btn-copy" onclick="copyData()">데이터 복사</button>
+        <button onclick="document.getElementById('importData').focus(); alert('아래 입력칸에 붙여넣으세요')">불러오기</button>
+        <input type="text" id="importData" placeholder="데이터 붙여넣기 후 로딩 클릭" style="grid-column: span 1; font-size: 12px;">
+        <button onclick="loadData()">로딩</button>
+        <button class="btn-reset" onclick="resetData()">관리자 데이터 리셋</button>
+    </div>
+
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>순위</th>
+                    <th>이름</th>
+                    <th>출석</th>
+                    <th>주간</th>
+                    <th>주간벌금</th>
+                    <th>월누적</th>
+                </tr>
+            </thead>
+            <tbody id="statTable"></tbody>
+        </table>
+    </div>
+
+    <div class="footer-stats">
+        <div class="stat-box"><span>총 운동</span><span class="stat-val" id="totalCount">0회</span></div>
+        <div class="stat-box money"><span>누적벌금</span><span class="stat-val" id="totalFine" style="color:var(--danger)">0원</span></div>
+    </div>
+</div>
+
+<script>
+    // [설정] 멤버 이름 및 비밀번호
+    const members = ["JK", "멤버2", "멤버3", "멤버4", "멤버5", "멤버6", "멤버7"];
+    const ADMIN_PASSWORD = "jk1234"; 
+    const DB_KEY = 'workout_sy_mobile_v1';
+
+    function init() {
+        const nameSelect = document.getElementById('nameSelect');
+        members.forEach(m => {
+            let opt = document.createElement('option');
+            opt.value = opt.text = m;
+            nameSelect.appendChild(opt);
+        });
+
+        const now = new Date();
+        const offset = now.getTimezoneOffset() * 60000;
+        document.getElementById('exerciseDate').value = new Date(now - offset).toISOString().split('T')[0];
+        
+        updateTitle();
+        updateDayLabel();
+        render();
+        setInterval(updateTimer, 1000);
+    }
+
+    function updateTitle() {
+        const now = new Date();
+        const weekNum = Math.ceil((now.getDate() + new Date(now.getFullYear(), now.getMonth(), 1).getDay()) / 7);
+        document.getElementById('dynamic-title').innerText = `삼영건강증진회 ${now.getMonth()+1}월 ${weekNum}째주`;
+    }
+
+    function updateDayLabel() {
+        const d = new Date(document.getElementById('exerciseDate').value);
+        const week = ['일','월','화','수','목','금','토'];
+        const day = week[d.getDay()];
+        document.getElementById('dayLabel').innerText = `(${day})`;
+        document.getElementById('dayLabel').style.color = (day==='토'||day==='일')?'var(--danger)':'var(--primary)';
+    }
+
+    function calculateFine(count) {
+        if (count >= 3) return 0;
+        return count === 2 ? 1000 : (count === 1 ? 3000 : 5000);
+    }
+
+    function render() {
+        const data = JSON.parse(localStorage.getItem(DB_KEY) || "[]");
+        const now = new Date();
+        const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + (now.getDay() === 0 ? -6 : 1 - now.getDay()));
+        monday.setHours(0,0,0,0);
+
+        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+
+        let summary = members.map(m => {
+            const weekLogs = data.filter(d => d.name === m && new Date(d.date) >= monday);
+            const wFine = calculateFine(weekLogs.length);
+            
+            // 월간 벌금 계산
+            let mFine = 0;
+            let temp = new Date(firstDay);
+            while(temp < monday) {
+                let wEnd = new Date(temp); wEnd.setDate(temp.getDate()+6); wEnd.setHours(23,59,59);
+                mFine += calculateFine(data.filter(d => d.name === m && new Date(d.date) >= temp && new Date(d.date) <= wEnd).length);
+                temp.setDate(temp.getDate()+7);
+            }
+            mFine += wFine;
+
+            let dBit = [0,0,0,0,0,0,0];
+            weekLogs.forEach(l => { dBit[(new Date(l.date).getDay() || 7) - 1] = 1; });
+            return { name:m, count:weekLogs.length, fine:wFine, mFine, dBit };
+        });
+
+        summary.sort((a,b) => b.count - a.count);
+        
+        let html = "";
+        summary.forEach((s, i) => {
+            const dayHtml = ['월','화','수','목','금','토','일'].map((n, idx) => `<span class="day-check ${s.dBit[idx]?'active':''}">${n}</span>`).join('');
+            html += `<tr>
+                <td>${i===0?"🥇":i+1}</td>
+                <td><strong>${s.name}</strong></td>
+                <td>${dayHtml}</td>
+                <td>${s.count}회</td>
+                <td style="color:${s.fine>0?'var(--danger)':'var(--success)'}">${s.fine/1000}k</td>
+                <td class="monthly-fine">${s.mFine/1000}k</td>
+            </tr>`;
+        });
+        document.getElementById('statTable').innerHTML = html;
+        document.getElementById('totalFine').innerText = summary.reduce((a,b)=>a+b.fine,0).toLocaleString() + "원";
+        document.getElementById('totalCount').innerText = summary.reduce((a,b)=>a+b.count,0) + "회";
+    }
+
+    function recordExercise() {
+        const name = document.getElementById('nameSelect').value;
+        const date = document.getElementById('exerciseDate').value;
+        let data = JSON.parse(localStorage.getItem(DB_KEY) || "[]");
+        if(data.find(d => d.name === name && d.date === date)) return alert("이미 기록됨");
+        data.push({name, date});
+        localStorage.setItem(DB_KEY, JSON.stringify(data));
+        render(); alert("완료!");
+    }
+
+    function updateTimer() {
+        const now = new Date();
+        const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + (now.getDay()===0?1:8-now.getDay()));
+        next.setHours(0,0,0,0);
+        const diff = next - now;
+        const h = String(Math.floor((diff / 3600000) % 24)).padStart(2, '0');
+        const m = String(Math.floor((diff / 60000) % 60)).padStart(2, '0');
+        const s = String(Math.floor((diff / 1000) % 60)).padStart(2, '0');
+        document.getElementById('countdown').innerText = `정산까지: ${Math.floor(diff/86400000)}일 ${h}:${m}:${s}`;
+    }
+
+    function resetData() {
+        if(confirm("리셋?") && prompt("비밀번호") === ADMIN_PASSWORD) {
+            localStorage.removeItem(DB_KEY); location.reload();
+        }
+    }
+
+    function copyData() {
+        navigator.clipboard.writeText(localStorage.getItem(DB_KEY)).then(()=>alert("복사됨"));
+    }
+
+    function loadData() {
+        const input = document.getElementById('importData').value;
+        if(input) { localStorage.setItem(DB_KEY, input); render(); alert("로딩됨"); }
+    }
+
+    init();
+</script>
+</body>
+</html>
