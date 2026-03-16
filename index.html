@@ -3,52 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>삼영건강증진회</title>
+    <title>삼영건강증진회 Master</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.0/kakao.min.js"></script>
     <style>
         :root { --primary: #5da3d9; --danger: #e66755; --success: #5cc97e; --bg: #f2f4f7; --text: #333; }
-        body { font-family: 'Pretendard', sans-serif; background: var(--bg); margin: 0; padding: 10px; color: var(--text); }
+        body { font-family: 'Pretendard', sans-serif; background: var(--bg); margin: 0; padding: 10px; color: var(--text); -webkit-tap-highlight-color: transparent; }
         .container { max-width: 500px; margin: 0 auto; background: white; padding: 15px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
 
-        .header-banner { background: linear-gradient(to right, #5da3d9, #5cc97e); padding: 18px; border-radius: 15px; color: white; text-align: center; margin-bottom: 12px; font-weight: bold; font-size: 1.3rem; }
-        .timer-box { border: 1px dashed var(--danger); background: #fff9f9; padding: 10px; border-radius: 10px; text-align: center; color: var(--danger); font-weight: bold; font-size: 0.85rem; margin-bottom: 15px; }
+        .header-banner { background: linear-gradient(to right, #5da3d9, #5cc97e); padding: 18px; border-radius: 15px; color: white; text-align: center; margin-bottom: 12px; font-weight: bold; font-size: 1.2rem; }
+        .timer-box { border: 1px dashed var(--danger); background: #fff9f9; padding: 8px; border-radius: 10px; text-align: center; color: var(--danger); font-weight: bold; font-size: 0.8rem; margin-bottom: 15px; }
 
-        .week-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 15px; }
-        .day-card { background: white; border: 1px solid #eee; border-radius: 10px; padding: 10px 0; text-align: center; cursor: pointer; }
-        .day-card span { display: block; font-size: 0.7rem; color: #888; margin-bottom: 2px; }
-        .day-card b { font-size: 0.95rem; }
+        .week-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-bottom: 15px; }
+        .day-card { background: white; border: 1px solid #eee; border-radius: 10px; padding: 8px 0; text-align: center; cursor: pointer; }
+        .day-card span { display: block; font-size: 0.65rem; color: #888; margin-bottom: 2px; }
+        .day-card b { font-size: 0.9rem; }
         .day-card.selected { background: var(--primary); color: white; border-color: var(--primary); }
         .day-card.today { border: 2px solid var(--success); }
 
         .input-group { display: flex; gap: 8px; margin-bottom: 15px; }
-        select { flex: 1.5; padding: 12px; border-radius: 12px; border: 1px solid #ddd; font-weight: bold; height: 48px; }
-        .btn { flex: 1; border: none; border-radius: 12px; color: white; font-weight: bold; cursor: pointer; font-size: 0.9rem; }
+        select { flex: 1.5; padding: 10px; border-radius: 12px; border: 1px solid #ddd; font-weight: bold; height: 46px; }
+        .btn { flex: 1; border: none; border-radius: 12px; color: white; font-weight: bold; cursor: pointer; font-size: 0.85rem; }
         .btn-start { background: var(--primary); }
         .btn-end { background: var(--danger); }
 
-        .table-wrapper { overflow-x: auto; margin-bottom: 20px; border-radius: 15px; border: 1px solid #f0f0f0; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.8rem; min-width: 450px; }
-        th { padding: 12px 5px; background: #fafafa; color: #999; }
-        td { padding: 14px 5px; border-bottom: 1px solid #f9f9f9; text-align: center; }
+        .table-wrapper { overflow-x: auto; margin-bottom: 15px; border-radius: 12px; border: 1px solid #f0f0f0; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.78rem; min-width: 450px; }
+        th { padding: 10px 5px; background: #fafafa; color: #999; }
+        td { padding: 12px 5px; border-bottom: 1px solid #f9f9f9; text-align: center; }
         
-        .day-badge { width: 22px; height: 22px; line-height: 22px; border-radius: 50%; background: #f0f0f0; color: #ccc; font-size: 9px; font-weight: bold; display: inline-block; margin: 0 1px; }
+        .day-badge { width: 22px; height: 22px; line-height: 22px; border-radius: 50%; background: #f0f0f0; color: #ccc; font-size: 9px; font-weight: bold; display: inline-block; margin: 0 1px; cursor: pointer; }
         .day-badge.active { background: var(--success); color: white; }
 
-        .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px; }
-        .summary-item { background: #fdfdfd; padding: 15px; border-radius: 15px; text-align: center; border: 1px solid #eee; }
-        .summary-item .label { font-size: 0.7rem; color: #888; margin-bottom: 5px; display: block; }
-        .summary-item .value { font-size: 1.1rem; font-weight: bold; }
+        .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .summary-item { background: #fdfdfd; padding: 12px; border-radius: 12px; text-align: center; border: 1px solid #eee; }
+        .summary-item .label { font-size: 0.65rem; color: #888; margin-bottom: 4px; display: block; }
+        .summary-item .value { font-size: 1rem; font-weight: bold; }
 
-        .btn-full { width: 100%; padding: 14px; border: none; border-radius: 12px; font-weight: bold; margin-bottom: 8px; cursor: pointer; color: white; }
+        .btn-full { width: 100%; padding: 14px; border: none; border-radius: 12px; font-weight: bold; margin-bottom: 8px; cursor: pointer; color: white; font-size: 0.9rem; }
+
+        #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-box { background: white; padding: 20px; border-radius: 20px; width: 85%; max-width: 300px; text-align: center; }
+        .modal-box input { width: 90%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; text-align: center; }
+        .modal-btns { display: flex; gap: 5px; margin-top: 15px; }
     </style>
 </head>
 <body>
 
+<div id="modal">
+    <div class="modal-box">
+        <h3 id="modalTitle" style="margin-top:0">기록 수정</h3>
+        <input type="text" id="editStart" placeholder="시작 시간 (00:00:00)">
+        <input type="text" id="editEnd" placeholder="종료 시간 (00:00:00)">
+        <div class="modal-btns">
+            <button onclick="saveEdit()" style="flex:1; background:var(--primary); color:white; border:none; padding:10px; border-radius:8px;">저장</button>
+            <button onclick="deleteRecord()" style="flex:1; background:var(--danger); color:white; border:none; padding:10px; border-radius:8px;">삭제</button>
+            <button onclick="closeModal()" style="flex:1; background:#ddd; border:none; padding:10px; border-radius:8px;">취소</button>
+        </div>
+    </div>
+</div>
+
 <div class="container">
-    <div class="header-banner"><span id="mainTitle">로딩 중...</span></div>
-    <div class="timer-box" id="timerDisplay">정산까지: 계산 중...</div>
+    <div class="header-banner"><span id="mainTitle">로드 중...</span></div>
+    <div class="timer-box" id="timerDisplay">계산 중...</div>
 
     <div class="week-grid" id="weekSelector"></div>
 
@@ -70,8 +88,8 @@
         <div class="summary-item"><span class="label">💰 이번달 누적적립금</span><div class="value" id="totalEarn" style="color:var(--success)">0원</div></div>
     </div>
 
-    <button class="btn-full" style="background:#5cc97e;" onclick="downloadData()">📊 엑셀 저장</button>
-    <button class="btn-full" style="background:#cbd5e0;" onclick="resetData()">⚙️ 초기화</button>
+    <button class="btn-full" style="background:#5cc97e;" onclick="downloadData()">📊 엑셀 다운로드</button>
+    <button class="btn-full" style="background:#cbd5e0;" onclick="resetData()">⚙️ 전체 데이터 초기화</button>
 </div>
 
 <input type="file" id="photoInput" accept="image/*" style="display:none;">
@@ -84,12 +102,14 @@
     };
     firebase.initializeApp(config);
     const db = firebase.database();
-    const dataPath = db.ref('sy_master_v10');
+    const dataPath = db.ref('sy_final_v1'); 
 
-    if (!Kakao.isInitialized()) Kakao.init('83f27f80590a93144d2d4157d0796b27');
+    // JK님이 주신 JavaScript 키 적용
+    if (!Kakao.isInitialized()) Kakao.init('586678c7f1fd7c2d42c3f3b922499b65');
 
     const members = ["우은미", "이계주", "김재현", "김종엽", "서호진", "이송희", "정환균", "황재균"];
     let selectedDate = new Date().toISOString().split('T')[0];
+    let currentEdit = null;
 
     function init() {
         const sel = document.getElementById('nameSelect');
@@ -125,17 +145,12 @@
         }
     }
 
-    // 사진첩을 트리거하는 공통 함수
     function triggerPhoto(type) {
         const name = document.getElementById('nameSelect').value;
         if(!name) return alert("멤버를 선택하세요!");
-        
         const input = document.getElementById('photoInput');
-        input.onchange = (e) => {
-            if(e.target.files.length > 0) {
-                handleRecord(type, name);
-            }
-        };
+        input.value = "";
+        input.onchange = (e) => { if(e.target.files.length > 0) handleRecord(type, name); };
         input.click();
     }
 
@@ -147,12 +162,11 @@
 
         if(type === 'START') {
             if(idx > -1) return alert("이미 시작 기록이 있습니다.");
-            list.push({ name, date: selectedDate, start: time, end: null, photo: true });
+            list.push({ name, date: selectedDate, start: time, end: "" });
             await dataPath.set(list);
             sendKakao(name, "운동 시작! 🔥", time);
         } else {
-            if(idx === -1) return alert("시작 기록이 없습니다.");
-            if(list[idx].end) return alert("이미 종료된 기록입니다.");
+            if(idx === -1) return alert("시작 기록을 먼저 해주세요.");
             list[idx].end = time;
             await dataPath.set(list);
             sendKakao(name, "운동 완료! 💪", `${list[idx].start} ~ ${time}`);
@@ -164,11 +178,10 @@
             objectType: 'feed',
             content: {
                 title: `🏋️ ${name}님 ${status}`,
-                description: `날짜: ${selectedDate}\n시간: ${detail}`,
+                description: `날짜: ${selectedDate}\n기록: ${detail}`,
                 imageUrl: 'https://cdn-icons-png.flaticon.com/512/3048/3048398.png',
                 link: { mobileWebUrl: location.href, webUrl: location.href }
-            },
-            buttons: [{ title: '현황 확인', link: { mobileWebUrl: location.href, webUrl: location.href } }]
+            }
         });
     }
 
@@ -184,24 +197,70 @@
             const mLogs = data.filter(d => d.name === m && d.date >= monthStr && d.end);
             const dBit = [0,0,0,0,0,0,0];
             wLogs.forEach(l => { dBit[(new Date(l.date).getDay() + 6) % 7] = 1; });
-            
             const cnt = wLogs.length;
             let fine = (cnt >= 3) ? 0 : (cnt === 2 ? 1000 : (cnt === 1 ? 3000 : 5000));
-            tFine += fine; 
-            tEarn += (mLogs.length * 1000);
-
+            tFine += fine; tEarn += (mLogs.length * 1000);
             return { name: m, cnt, fine, dBit };
         }).sort((a,b) => b.cnt - a.cnt);
 
         let html = "";
         summary.forEach((s, i) => {
-            const badges = ['월','화','수','목','금','토','일'].map((n, idx) => `<div class="day-badge ${s.dBit[idx]?'active':''}">${n}</div>`).join('');
-            html += `<tr><td>${i+1}</td><td style="font-weight:bold">${s.name}</td><td>${badges}</td><td>${s.cnt}</td><td style="color:var(--danger)">${s.fine.toLocaleString()}</td><td>0원</td></tr>`;
+            const badges = ['월','화','수','목','금','토','일'].map((n, idx) => `<div class="day-badge ${s.dBit[idx]?'active':''}" onclick="openEdit('${s.name}', ${idx})">${n}</div>`).join('');
+            html += `<tr><td>${i+1}</td><td style="font-weight:bold">${s.name}</td><td>${badges}</td><td>${s.cnt}</td><td style="color:var(--danger)">${s.fine.toLocaleString()}</td><td>${(s.cnt*1000).toLocaleString()}</td></tr>`;
         });
         document.getElementById('statTable').innerHTML = html;
         document.getElementById('totalFine').innerText = tFine.toLocaleString() + "원";
         document.getElementById('totalEarn').innerText = tEarn.toLocaleString() + "원";
     }
+
+    async function openEdit(name, dayIdx) {
+        const now = new Date();
+        const startDay = now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1);
+        const targetDate = new Date(new Date(now).setDate(startDay + dayIdx)).toISOString().split('T')[0];
+        const snap = await dataPath.once('value');
+        const list = snap.val() || [];
+        const record = list.find(r => r.name === name && r.date === targetDate);
+        currentEdit = { name, date: targetDate };
+        document.getElementById('modalTitle').innerText = `${name} (${targetDate})`;
+        document.getElementById('editStart').value = record ? record.start : "";
+        document.getElementById('editEnd').value = record ? record.end : "";
+        document.getElementById('modal').style.display = 'flex';
+    }
+
+    async function saveEdit() {
+        const snap = await dataPath.once('value');
+        let list = snap.val() || [];
+        let idx = list.findIndex(r => r.name === currentEdit.name && r.date === currentEdit.date);
+        const s = document.getElementById('editStart').value;
+        const e = document.getElementById('editEnd').value;
+        if(idx > -1) { list[idx].start = s; list[idx].end = e; }
+        else { list.push({...currentEdit, start: s, end: e}); }
+        await dataPath.set(list); closeModal();
+    }
+
+    async function deleteRecord() {
+        if(!confirm("삭제하시겠습니까?")) return;
+        const snap = await dataPath.once('value');
+        let list = snap.val() || [];
+        list = list.filter(r => !(r.name === currentEdit.name && r.date === currentEdit.date));
+        await dataPath.set(list); closeModal();
+    }
+
+    function closeModal() { document.getElementById('modal').style.display = 'none'; }
+
+    async function downloadData() {
+        const snap = await dataPath.once('value');
+        const data = snap.val() || [];
+        let csv = "\uFEFF이름,날짜,시작시간,종료시간\n";
+        data.forEach(r => { csv += `${r.name},${r.date},${r.start},${r.end}\n`; });
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `삼영_운동기록_${new Date().toISOString().split('T')[0]}.csv`;
+        link.click();
+    }
+
+    async function resetData() { if(confirm("주의! 모든 기록을 삭제하시겠습니까?")) await dataPath.set(null); }
 
     function tick() {
         const now = new Date();
@@ -212,9 +271,6 @@
         const s = String(Math.floor((diff/1000)%60)).padStart(2,'0');
         document.getElementById('timerDisplay').innerText = `정산까지: ${Math.floor(diff/86400000)}일 ${h}:${m}:${s}`;
     }
-
-    async function downloadData() { /* 기존 동일 */ }
-    async function resetData() { if(confirm("전체 초기화하시겠습니까?")) await dataPath.set(null); }
     window.onload = init;
 </script>
 </body>
