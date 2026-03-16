@@ -8,47 +8,29 @@
         :root { --primary: #3498db; --danger: #e74c3c; --success: #2ecc71; --dark: #2c3e50; --bg: #f0f2f5; }
         body { font-family: 'Pretendard', -apple-system, sans-serif; padding: 5px; background: var(--bg); color: var(--dark); margin: 0; }
         .container { max-width: 100%; margin: 0 auto; background: white; padding: 10px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.08); display: flex; flex-direction: column; }
-        
-        /* 헤더 배너 */
-        .header-banner { 
-            background: linear-gradient(135deg, #2980b9, #2ecc71); 
-            padding: 15px 10px; border-radius: 10px; color: white; text-align: center; margin-bottom: 10px;
-        }
+        .header-banner { background: linear-gradient(135deg, #2980b9, #2ecc71); padding: 15px 10px; border-radius: 10px; color: white; text-align: center; margin-bottom: 10px; }
         .header-banner h2 { margin: 0; font-size: 1.2rem; letter-spacing: -1px; }
         .header-banner p { margin: 5px 0 0; font-size: 0.8rem; opacity: 0.9; }
-
         .timer { text-align: center; font-size: 0.82rem; color: var(--danger); font-weight: bold; margin-bottom: 8px; background: #fff5f5; padding: 6px; border-radius: 6px; border: 1px dashed var(--danger); }
-        
-        /* 입력 패널 */
         .admin-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 8px; padding: 6px; background: #f8f9fa; border-radius: 8px; }
         select, input, button { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #ddd; font-family: inherit; font-size: 14px; box-sizing: border-box; height: 38px; }
-        
         .date-box { display: flex; align-items: center; background: white; border: 1px solid #ddd; border-radius: 6px; padding: 0 8px; height: 38px; }
-        #exerciseDate { border: none; flex-grow: 1; font-size: 14px; color: var(--dark); background: transparent; font-family: inherit; }
+        #exerciseDate { border: none; flex-grow: 1; font-size: 14px; color: var(--dark); background: transparent; }
         #dayLabel { font-size: 14px; white-space: nowrap; font-weight: bold; margin-left: 5px; }
-        
         button { background: var(--primary); color: white; border: none; cursor: pointer; font-weight: bold; }
         .btn-excel { background: #27ae60; }
         .btn-reset { background: #95a5a6; font-size: 11px; padding: 8px; margin-top: 20px; width: 100%; height: auto; border: none; color: white; border-radius: 6px; opacity: 0.5; }
-
-        /* 테이블 (한 페이지 최적화) */
         .table-wrapper { overflow-x: auto; border-radius: 8px; border: 1px solid #eee; }
         table { width: 100%; border-collapse: collapse; min-width: 480px; font-size: 12px; }
         th, td { padding: 8px 1px; border-bottom: 1px solid #eee; text-align: center; }
         th { background: #f8f9fa; color: #666; font-size: 10px; }
-        
         .day-cell-wrapper { display: flex; justify-content: center; gap: 1px; }
         .day-badge { width: 18px; height: 18px; line-height: 18px; border-radius: 50%; background: #eee; color: #aaa; font-size: 9px; font-weight: bold; }
         .day-badge.active { background: var(--success); color: white; }
-
         .monthly-fine { background: #fffdeb; font-weight: bold; color: #d35400; }
-        
-        /* 통계 영역 위치 변경 */
         .footer-stats { margin-top: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
         .stat-box { padding: 10px; border-radius: 8px; text-align: center; }
         .stat-val { font-size: 1rem; font-weight: bold; display: block; margin-top: 2px; }
-
-        /* 양심 체크 모달 최적화 */
         #modalOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; }
         .modal { background: white; width: 85%; max-width: 300px; padding: 20px; border-radius: 15px; }
         .q-wrap { margin: 15px 0; }
@@ -63,12 +45,8 @@
     <div class="modal">
         <h3 style="text-align:center; margin-top:0;">📢 양심 체크</h3>
         <div class="q-wrap">
-            <div class="q-item">
-                <input type="checkbox" id="q1"><label for="q1">1. 50분 이상 운동했나요?</label>
-            </div>
-            <div class="q-item">
-                <input type="checkbox" id="q2"><label for="q2">2. 진짜 양심껏 했나요?</label>
-            </div>
+            <div class="q-item"><input type="checkbox" id="q1"><label for="q1">1. 50분 이상 운동했나요?</label></div>
+            <div class="q-item"><input type="checkbox" id="q2"><label for="q2">2. 진짜 양심껏 했나요?</label></div>
         </div>
         <div style="display:flex; gap:8px;">
             <button style="flex:1; background:#eee; color:#666;" onclick="closeModal()">취소</button>
@@ -82,19 +60,16 @@
         <h2 id="dynamic-title">🔥 삼영건강증진회 🔥</h2>
         <p>오늘의 땀은 내일의 복근이 된다!</p>
     </div>
-
     <div class="timer" id="countdown">계산 중...</div>
-    
     <div class="admin-panel">
         <select id="nameSelect"></select>
         <button onclick="openModal()">🏋️ 기록</button>
         <div class="date-box">
-            <input type="date" id="exerciseDate" onchange="updateDayLabel()">
+            <input type="date" id="exerciseDate">
             <span id="dayLabel"></span>
         </div>
         <button class="btn-excel" onclick="downloadExcel()">📊 저장</button>
     </div>
-
     <div class="table-wrapper">
         <table>
             <thead>
@@ -110,7 +85,6 @@
             <tbody id="statTable"></tbody>
         </table>
     </div>
-
     <div class="footer-stats">
         <div class="stat-box" style="background: #fff5f5;">
             <span style="font-size:0.65rem; color:#c0392b;">💸 주간 벌금합계</span>
@@ -121,15 +95,32 @@
             <span class="stat-val" id="monthlyTotalFine" style="color:#27ae60">0원</span>
         </div>
     </div>
-
     <button class="btn-reset" onclick="resetData()">⚙️ 데이터 초기화 (관리자)</button>
 </div>
 
-<script>
-    // 1. 멤버 ㄱㄴㄷ 순 정렬
+<script type="module">
+    // Firebase SDK 로드
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, set, onValue, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    // 🔴 이미지에서 보내주신 설정값 적용
+    const firebaseConfig = {
+        apiKey: "AIzaSyDHmxYjI0bp55jDuBYFFI5fA81BXx_u2Mg",
+        authDomain: "samyoung-61ed1.firebaseapp.com",
+        databaseURL: "https://samyoung-61ed1-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "samyoung-61ed1",
+        storageBucket: "samyoung-61ed1.firebasestorage.app",
+        messagingSenderId: "967237435038",
+        appId: "1:967237435038:web:d2455cda50a06368cc458f",
+        measurementId: "G-GT5G72S3SL"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const dbRef = ref(db, 'sy_workout_logs');
+
     const members = ["김재현", "김종엽", "서호진", "우은미", "이계주", "이송희", "정환균", "황재균"];
-    const ADMIN_PASSWORD = "jk1234"; 
-    const DB_KEY = 'workout_sy_final_ver';
+    const ADMIN_PASSWORD = "jk1234";
 
     function init() {
         const nameSelect = document.getElementById('nameSelect');
@@ -139,60 +130,77 @@
             nameSelect.appendChild(opt);
         });
 
-        const now = new Date();
-        const diffToMon = (now.getDay() === 0 ? -6 : 1 - now.getDay());
-        const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMon);
-        monday.setHours(0,0,0,0);
-        
         const dateInput = document.getElementById('exerciseDate');
-        dateInput.min = monday.toISOString().split('T')[0];
+        const now = new Date();
         const offset = now.getTimezoneOffset() * 60000;
         dateInput.value = new Date(now - offset).toISOString().split('T')[0];
         
-        updateTitle();
+        dateInput.addEventListener('change', updateDayLabel);
         updateDayLabel();
-        render();
+        updateTitle();
         setInterval(updateTimer, 1000);
+
+        // 실시간 데이터 수신 및 화면 렌더링
+        onValue(dbRef, (snapshot) => {
+            const data = snapshot.val() || [];
+            render(data);
+        });
     }
+
+    window.openModal = () => {
+        document.getElementById('q1').checked = false;
+        document.getElementById('q2').checked = false;
+        document.getElementById('modalOverlay').style.display = 'flex';
+    };
+    window.closeModal = () => document.getElementById('modalOverlay').style.display = 'none';
+
+    window.submitRecord = async () => {
+        if(!document.getElementById('q1').checked || !document.getElementById('q2').checked) {
+            alert("양심 체크를 완료해주세요!"); return;
+        }
+        const name = document.getElementById('nameSelect').value;
+        const date = document.getElementById('exerciseDate').value;
+
+        const snapshot = await get(dbRef);
+        let data = snapshot.val() || [];
+        
+        if(data.find(d => d.name === name && d.date === date)) {
+            alert("이미 해당 날짜에 기록이 있습니다!"); return;
+        }
+        
+        data.push({name, date});
+        await set(dbRef, data); // DB에 저장 (실시간 동기화)
+        
+        closeModal();
+        alert("기록 완료!");
+    };
 
     function calculateFine(count) {
         if (count >= 3) return 0;
         return count === 2 ? 1000 : (count === 1 ? 3000 : 5000);
     }
 
-    function render() {
-        const data = JSON.parse(localStorage.getItem(DB_KEY) || "[]");
+    function render(data) {
         const now = new Date();
         const diffToMon = (now.getDay() === 0 ? -6 : 1 - now.getDay());
         const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMon);
         monday.setHours(0,0,0,0);
-        
-        // 🔥 JK님 요청: 2026년 3월은 1-2주차(3/15까지) 제외, 3/16부터 정산 시작
         const EXCEPTION_DATE = new Date(2026, 2, 16); 
 
         let summary = members.map(m => {
             const weekLogs = data.filter(d => d.name === m && new Date(d.date) >= monday);
             const wFine = calculateFine(weekLogs.length);
-            
             let mFineTotal = 0;
             let temp = new Date(now.getFullYear(), now.getMonth(), 1);
-            
-            // 과거 주차 합산 (미래 주차 제외)
             while(temp < monday) {
-                // 2026년 3월 16일 이전 주차는 벌금 0원 처리
                 if (!(now.getMonth() === 2 && now.getFullYear() === 2026 && temp < EXCEPTION_DATE)) {
-                    let wEnd = new Date(temp); 
-                    wEnd.setDate(temp.getDate()+6); 
-                    wEnd.setHours(23,59,59);
+                    let wEnd = new Date(temp); wEnd.setDate(temp.getDate()+6);
                     const pastCount = data.filter(d => d.name === m && new Date(d.date) >= temp && new Date(d.date) <= wEnd).length;
                     mFineTotal += calculateFine(pastCount);
                 }
                 temp.setDate(temp.getDate()+7);
             }
-            
-            // 현재 주 벌금 합산
             mFineTotal += wFine;
-            
             let dBit = [0,0,0,0,0,0,0];
             weekLogs.forEach(l => { const d = new Date(l.date).getDay(); dBit[d === 0 ? 6 : d - 1] = 1; });
             return { name:m, count:weekLogs.length, fine:wFine, mFine:mFineTotal, dBit };
@@ -210,26 +218,6 @@
         document.getElementById('monthlyTotalFine').innerText = totalMonthlyFine.toLocaleString() + "원";
     }
 
-    function openModal() {
-        document.getElementById('q1').checked = false;
-        document.getElementById('q2').checked = false;
-        document.getElementById('modalOverlay').style.display = 'flex';
-    }
-    function closeModal() { document.getElementById('modalOverlay').style.display = 'none'; }
-
-    function submitRecord() {
-        if(!document.getElementById('q1').checked || !document.getElementById('q2').checked) {
-            alert("두 항목 모두 체크해야 완료됩니다! 💪"); return;
-        }
-        const name = document.getElementById('nameSelect').value;
-        const date = document.getElementById('exerciseDate').value;
-        let data = JSON.parse(localStorage.getItem(DB_KEY) || "[]");
-        if(data.find(d => d.name === name && d.date === date)) { alert("이미 기록됨!"); return; }
-        data.push({name, date});
-        localStorage.setItem(DB_KEY, JSON.stringify(data));
-        render(); closeModal(); alert("기록 완료! 오늘도 고생하셨습니다 JK님!");
-    }
-
     function updateTitle() {
         const now = new Date();
         const weekNum = Math.ceil((now.getDate() + new Date(now.getFullYear(), now.getMonth(), 1).getDay()) / 7);
@@ -245,16 +233,17 @@
         label.style.color = (day==='토'||day==='일')?'var(--danger)':'var(--primary)';
     }
 
-    function downloadExcel() {
-        const data = JSON.parse(localStorage.getItem(DB_KEY) || "[]");
+    window.downloadExcel = async () => {
+        const snapshot = await get(dbRef);
+        const data = snapshot.val() || [];
         let csvContent = "\uFEFF이름,날짜\n";
         data.forEach(row => { csvContent += `${row.name},${row.date}\n`; });
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
-        link.setAttribute("href", URL.createObjectURL(blob));
-        link.setAttribute("download", "삼영건강증진회_기록.csv");
+        link.href = URL.createObjectURL(blob);
+        link.download = "삼영건강증진회_기록.csv";
         link.click();
-    }
+    };
 
     function updateTimer() {
         const now = new Date();
@@ -267,11 +256,15 @@
         document.getElementById('countdown').innerText = `정산까지: ${Math.floor(diff/86400000)}일 ${h}:${m}:${s}`;
     }
 
-    function resetData() {
-        if(confirm("모든 데이터를 초기화할까요?")) {
-            if(prompt("관리자 비밀번호") === ADMIN_PASSWORD) { localStorage.removeItem(DB_KEY); location.reload(); }
+    window.resetData = async () => {
+        if(confirm("모든 데이터를 초기화하시겠습니까?")) {
+            if(prompt("관리자 비밀번호") === ADMIN_PASSWORD) {
+                await set(dbRef, []);
+                alert("초기화되었습니다.");
+            }
         }
-    }
+    };
+
     init();
 </script>
 </body>
