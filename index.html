@@ -338,7 +338,7 @@
     function updateHeaderTitle() {
         const now = new Date();
         const wk = Math.ceil((now.getDate() + new Date(now.getFullYear(), now.getMonth(), 1).getDay()) / 7);
-        document.getElementById('mainTitle').innerText = `🔥 삼영 ${now.getMonth()+1}월 ${wk}주차 🔥`;
+        document.getElementById('mainTitle').innerText = `🔥 삼영건강증진회 ${now.getMonth()+1}월 ${wk}주차 🔥`;
     }
 
     function closeActionModal() { document.getElementById('actionModal').style.display = 'none'; }
