@@ -34,6 +34,7 @@
         th { padding: 10px 4px; background: #fafafa; color: #888; }
         td { padding: 12px 4px; border-bottom: 1px solid #f9f9f9; text-align: center; }
         tr.is-working { background-color: var(--working) !important; }
+        tr.is-disabled { opacity: 0.5; background-color: #f5f5f5; }
 
         .day-badge { width: 22px; height: 22px; line-height: 22px; border-radius: 50%; background: #f0f0f0; color: #ccc; font-size: 9px; font-weight: bold; display: inline-block; margin: 0 1px; cursor: pointer; }
         .day-badge.active { background-color: var(--success) !important; color: white !important; } 
@@ -51,7 +52,12 @@
         .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: #eee; border: 1px solid #eee; margin: 10px 0; }
         .cal-day-head { background: #f8f9fa; padding: 5px; text-align: center; font-size: 0.7rem; font-weight: bold; color: #999; }
         .cal-cell { background: white; min-height: 65px; padding: 4px; font-size: 0.65rem; border: 0.5px solid #f9f9f9; }
-        .cal-member-tag { background: #eef7ff; color: #5da3d9; padding: 1px 2px; border-radius: 3px; display: block; margin-bottom: 1px; font-size: 0.55rem; white-space: nowrap; overflow: hidden; text-align: center; }
+        
+        .cal-member-row { display: flex; align-items: center; gap: 2px; margin-bottom: 2px; }
+        .cal-member-name { font-size: 0.55rem; width: 28px; white-space: nowrap; overflow: hidden; text-align: right; color: #666; }
+        .cal-gauge-box { display: flex; gap: 1px; flex: 1; }
+        .cal-gauge-dot { height: 6px; flex: 1; background: #eee; border-radius: 1px; }
+        .cal-gauge-dot.filled { background: var(--success); }
         
         .report-section { margin-top: 25px; padding: 15px; border-radius: 18px; background: #fff; border: 1px solid #eee; box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
         .report-title { font-weight: bold; font-size: 1rem; margin-bottom: 12px; color: var(--primary); border-left: 4px solid var(--primary); padding-left: 10px; }
@@ -83,16 +89,13 @@
         <button onclick="toggleView('historyView', false)" style="border:none; background:#eee; padding:10px 20px; border-radius:12px; font-weight:bold;">닫기</button>
     </div>
     
-    <div class="report-title">📅 이달의 운동 현황 (월 시작)</div>
-    <div class="cal-grid" id="calendarGrid"></div>
-
     <div class="report-section">
         <div class="report-title">📉 지난주 벌금 납부 관리 <span id="unpaidTotal" style="float:right; color:var(--danger); font-size:0.8rem;"></span></div>
         <table class="report-table">
             <thead><tr><th>이름</th><th>횟수</th><th>벌금</th><th>납부</th></tr></thead>
             <tbody id="lastWeekReportBody"></tbody>
         </table>
-        <p style="font-size:0.65rem; color:#999; margin-top:8px;">* 체크박스를 클릭하면 납부 상태가 저장됩니다.</p>
+        <button class="btn btn-start" style="width:100%; margin-top:15px; padding:12px;" onclick="savePayments()">납부 상태 저장하기</button>
     </div>
 
     <div class="report-section">
@@ -103,6 +106,27 @@
         </table>
     </div>
     <div style="height:50px;"></div>
+</div>
+
+<div id="adminView" class="full-layer">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <h2 style="margin:0; font-size:1.2rem; color:var(--danger)">⚙️ 관리자 메뉴</h2>
+        <button onclick="toggleView('adminView', false)" style="border:none; background:#eee; padding:10px 20px; border-radius:12px; font-weight:bold;">닫기</button>
+    </div>
+
+    <div class="report-section">
+        <div class="report-title">👥 멤버 활동 상태 설정</div>
+        <div id="adminMemberList" style="font-size:0.9rem;"></div>
+    </div>
+
+    <div class="report-section">
+        <div class="report-title">💾 데이터 관리</div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <button class="btn" style="background:#666;" onclick="downloadCSV()">백업(CSV)</button>
+            <button class="btn" style="background:#888;" onclick="document.getElementById('csvUpload').click()">복구(CSV)</button>
+            <button class="btn btn-end" style="grid-column: span 2;" onclick="resetData()">전체 초기화</button>
+        </div>
+    </div>
 </div>
 
 <div class="container">
@@ -123,6 +147,11 @@
         </table>
     </div>
 
+    <div class="report-section" style="margin-top:10px; padding:10px;">
+        <div class="report-title" style="font-size:0.85rem; margin-bottom:8px;">📅 이달의 운동 현황 (게이지)</div>
+        <div class="cal-grid" id="calendarGrid"></div>
+    </div>
+
     <div class="summary-box">
         <div class="summary-item" style="color:var(--danger)"><span>주간 벌금</span><b id="totalWeekFine">0원</b></div>
         <div class="summary-item" style="color:var(--primary)"><span>월간 적립</span><b id="totalMonthSave">0원</b></div>
@@ -130,9 +159,7 @@
 
     <div class="mini-menu">
         <button class="btn-mini" onclick="openReport()">📊 리포트 보기</button>
-        <button class="btn-mini" onclick="downloadCSV()">💾 백업</button>
-        <button class="btn-mini" onclick="document.getElementById('csvUpload').click()">📥 복구</button>
-        <button class="btn-mini" onclick="resetData()">⚙️ 초기화</button>
+        <button class="btn-mini" onclick="toggleView('adminView', true)">⚙️ 관리자 메뉴</button>
     </div>
     <input type="file" id="csvUpload" accept=".csv" style="display:none;" onchange="importCSV(this)">
 </div>
@@ -142,12 +169,14 @@
     firebase.initializeApp(config);
     const db = firebase.database();
     const dataPath = db.ref('sy_master_v29'); 
-    const payPath = db.ref('sy_payments_v29'); // 납부 상태 저장 경로 추가
+    const payPath = db.ref('sy_payments_v29');
+    const adminPath = db.ref('sy_admin_v29');
 
     const members = ["우은미", "이계주", "김재현", "김종엽", "서호진", "이송희", "정환균", "황재균"];
     let selectedDate = new Date().toISOString().split('T')[0];
     let allData = [];
     let paymentData = {};
+    let adminSettings = {};
     let pendingAction = null;
 
     function init() {
@@ -156,77 +185,157 @@
         renderWeekCards();
         updateHeaderTitle();
         
-        // 데이터 리스너
-        dataPath.on('value', snap => {
-            allData = snap.val() || [];
-            renderTable(allData);
-        });
-        payPath.on('value', snap => {
-            paymentData = snap.val() || {};
-            if(document.getElementById('historyView').style.display === 'block') renderLastWeekReport();
-        });
+        dataPath.on('value', snap => { allData = snap.val() || []; renderTable(allData); renderCalendar(); });
+        payPath.on('value', snap => { paymentData = snap.val() || {}; if(document.getElementById('historyView').style.display === 'block') renderLastWeekReport(); });
+        adminPath.on('value', snap => { adminSettings = snap.val() || {}; renderAdminList(); renderTable(allData); });
 
         setInterval(tick, 1000);
     }
 
     function openReport() {
-        renderCalendar();
         renderLastWeekReport();
         renderAccumulatedReport();
         toggleView('historyView', true);
     }
 
-    // 1. 달력 일요일 빨간색 + 월요일 시작
+    function getMonday(d) {
+        let date = new Date(d);
+        let day = date.getDay();
+        let diff = date.getDate() - day + (day === 0 ? -6 : 1);
+        return new Date(date.setDate(diff)).toISOString().split('T')[0];
+    }
+
     function renderCalendar() {
         const grid = document.getElementById('calendarGrid');
         const now = new Date();
         const firstDayDate = new Date(now.getFullYear(), now.getMonth(), 1);
-        // 월요일(1) 시작 기준으로 공백 계산: (요일 + 6) % 7
         const emptyCells = (firstDayDate.getDay() + 6) % 7; 
         const lastDate = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
         
         let html = ['월','화','수','목','금','토','일'].map(d => `<div class="cal-day-head" style="${d==='일'?'color:red':''}">${d}</div>`).join('');
-        
         for(let i=0; i<emptyCells; i++) html += `<div class="cal-cell"></div>`;
         
         for(let d=1; d<=lastDate; d++) {
             const dateObj = new Date(now.getFullYear(), now.getMonth(), d);
             const isSunday = dateObj.getDay() === 0;
             const ds = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-            const tags = allData.filter(r => r.date === ds && r.end).map(r => `<span class="cal-member-tag">${r.name}</span>`).join('');
+            const currentMon = getMonday(ds);
+            
+            let gauges = "";
+            members.forEach(m => {
+                const dayLog = allData.find(r => r.name === m && r.date === ds && r.end);
+                if(dayLog) {
+                    const weekLogsCount = new Set(allData.filter(r => r.name === m && r.date >= currentMon && r.date <= ds && r.end).map(r => r.date)).size;
+                    gauges += `<div class="cal-member-row">
+                        <span class="cal-member-name">${m}</span>
+                        <div class="cal-gauge-box">
+                            <div class="cal-gauge-dot ${weekLogsCount >= 1 ? 'filled' : ''}"></div>
+                            <div class="cal-gauge-dot ${weekLogsCount >= 2 ? 'filled' : ''}"></div>
+                            <div class="cal-gauge-dot ${weekLogsCount >= 3 ? 'filled' : ''}"></div>
+                        </div>
+                    </div>`;
+                }
+            });
             
             html += `<div class="cal-cell">
                 <span style="font-weight:bold; color:${isSunday ? 'red' : '#666'};">${d}</span>
-                ${tags}
+                ${gauges}
             </div>`;
         }
         grid.innerHTML = html;
     }
 
-    // 2. 지난주 벌금 + 납부 체크박스 + 미납액 관리
-    async function togglePayment(name, weekKey) {
+    // 2. 관리자 페이지 멤버 활성화 관리 '중지' -> '휴식'으로 변경
+    function renderAdminList() {
+        const list = document.getElementById('adminMemberList');
+        list.innerHTML = members.map(m => {
+            const isOff = adminSettings[m]?.disabled || false;
+            return `<div style="display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid #eee;">
+                <span>${m} <b>${isOff ? '(휴식 중)' : '(활동 중)'}</b></span>
+                <button class="btn-mini" style="background:${isOff ? 'var(--success)' : 'var(--danger)'}; color:white; border:none;" 
+                onclick="toggleActivity('${m}', ${isOff})">${isOff ? '활동 복귀' : '휴식 설정'}</button>
+            </div>`;
+        }).join('');
+    }
+
+    async function toggleActivity(name, currentStatus) {
+        await adminPath.child(name).set({ disabled: !currentStatus });
+    }
+
+    function renderTable(data) {
+        const now = new Date();
+        const startDay = new Date(now); 
+        startDay.setDate(now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1));
+        const monStr = startDay.toISOString().split('T')[0];
+        let weekFineTotal = 0; let monthSaveTotal = 0;
+
+        const summary = members.map(m => {
+            const isOff = adminSettings[m]?.disabled || false; 
+            const wLogs = data.filter(d => d.name === m && d.date >= monStr);
+            const globalIng = data.find(d => d.name === m && d.end === "");
+            const dBit = [0,0,0,0,0,0,0];
+            wLogs.forEach(l => {
+                if(l.end) {
+                    const logDate = new Date(l.date.replace(/-/g, '/'));
+                    dBit[(logDate.getDay() + 6) % 7] = 1;
+                }
+            });
+            const cnt = dBit.filter(b => b === 1).length;
+            const fine = isOff ? 0 : (cnt >= 3 ? 0 : (cnt === 2 ? 1000 : (cnt === 1 ? 3000 : 5000)));
+            weekFineTotal += fine;
+            monthSaveTotal += (data.filter(d => d.name === m && d.date >= "2026-03-01" && d.end).length * 1000);
+            return { name: m, cnt, fine, dBit, globalIng, isOff };
+        }).sort((a,b) => b.cnt - a.cnt);
+
+        document.getElementById('totalWeekFine').innerText = weekFineTotal.toLocaleString() + "원";
+        document.getElementById('totalMonthSave').innerText = monthSaveTotal.toLocaleString() + "원";
+        
+        let html = "";
+        summary.forEach((s, i) => {
+            const badges = ['월','화','수','목','금','토','일'].map((n, idx) => {
+                let cls = s.dBit[idx] ? "day-badge active" : "day-badge";
+                if (s.globalIng && (new Date(s.globalIng.date.replace(/-/g, '/')).getDay() + 6) % 7 === idx) cls = "day-badge ing";
+                return `<div class="${cls}" onclick="editLog('${s.name}', ${idx})">${cls.includes('ing') ? 'ing' : n}</div>`;
+            }).join('');
+            html += `<tr class="${s.globalIng ? 'is-working' : ''} ${s.isOff ? 'is-disabled' : ''}">
+                <td>${i+1}</td>
+                <td style="font-weight:bold">${s.name}${s.isOff ? '<br><small>(휴식)</small>' : ''}</td>
+                <td>${badges}</td>
+                <td>${s.cnt}</td>
+                <td style="color:var(--danger)">${s.fine.toLocaleString()}</td>
+            </tr>`;
+        });
+        document.getElementById('statTable').innerHTML = html;
+    }
+
+    // 3. 벌금 납입 체크 후 '저장하기' 버튼 로직
+    async function savePayments() {
+        await payPath.set(paymentData);
+        alert("납부 상태가 저장되었습니다.");
+    }
+
+    function togglePaymentLocal(name, weekKey) {
         const key = `${name}_${weekKey}`;
         paymentData[key] = !paymentData[key];
-        await payPath.set(paymentData);
     }
 
     function renderLastWeekReport() {
         const now = new Date();
-        // 지난주 월요일 구하기
         const lastMon = new Date(now);
         lastMon.setDate(now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1) - 7);
         const lastMonStr = lastMon.toISOString().split('T')[0];
         const lastSunStr = new Date(lastMon.getTime() + 6*86400000).toISOString().split('T')[0];
-        const weekKey = `W_${lastMonStr}`; // 주차별 유니크 키
+        const weekKey = `W_${lastMonStr}`;
 
         let html = "";
         let totalUnpaid = 0;
 
         members.forEach(m => {
+            const isOff = adminSettings[m]?.disabled || false;
             const logs = allData.filter(d => d.name === m && d.date >= lastMonStr && d.date <= lastSunStr && d.end);
             const dates = new Set(logs.map(l => l.date));
             const cnt = dates.size;
-            const fine = (cnt >= 3 ? 0 : (cnt === 2 ? 1000 : (cnt === 1 ? 3000 : 5000)));
+            const fine = isOff ? 0 : (cnt >= 3 ? 0 : (cnt === 2 ? 1000 : (cnt === 1 ? 3000 : 5000)));
             
             const isPaid = paymentData[`${m}_${weekKey}`] || false;
             if(!isPaid) totalUnpaid += fine;
@@ -235,7 +344,7 @@
                 <td>${m}</td>
                 <td>${cnt}회</td>
                 <td style="color:${fine>0?'var(--danger)':'#ccc'}; font-weight:bold;">${fine.toLocaleString()}원</td>
-                <td><input type="checkbox" class="pay-check" ${isPaid ? 'checked' : ''} ${fine===0 ? 'disabled' : ''} onchange="togglePayment('${m}', '${weekKey}')"></td>
+                <td><input type="checkbox" class="pay-check" ${isPaid ? 'checked' : ''} ${fine===0 ? 'disabled' : ''} onchange="togglePaymentLocal('${m}', '${weekKey}')"></td>
             </tr>`;
         });
         
@@ -250,45 +359,6 @@
             return `<tr><td style="font-weight:bold">${m}</td><td>${(mCount * 1000).toLocaleString()}원</td><td>${(yCount * 1000).toLocaleString()}원</td></tr>`;
         }).join('');
         document.getElementById('totalAccumulatedBody').innerHTML = sampleHtml;
-    }
-
-    function renderTable(data) {
-        const now = new Date();
-        const startDay = new Date(now); 
-        startDay.setDate(now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1));
-        const monStr = startDay.toISOString().split('T')[0];
-        let weekFineTotal = 0; let monthSaveTotal = 0;
-
-        const summary = members.map(m => {
-            const wLogs = data.filter(d => d.name === m && d.date >= monStr);
-            const globalIng = data.find(d => d.name === m && d.end === "");
-            const dBit = [0,0,0,0,0,0,0];
-            wLogs.forEach(l => {
-                if(l.end) {
-                    const logDate = new Date(l.date.replace(/-/g, '/'));
-                    dBit[(logDate.getDay() + 6) % 7] = 1;
-                }
-            });
-            const cnt = dBit.filter(b => b === 1).length;
-            const fine = (cnt >= 3 ? 0 : (cnt === 2 ? 1000 : (cnt === 1 ? 3000 : 5000)));
-            weekFineTotal += fine;
-            monthSaveTotal += (data.filter(d => d.name === m && d.date >= "2026-03-01" && d.end).length * 1000);
-            return { name: m, cnt, fine, dBit, globalIng };
-        }).sort((a,b) => b.cnt - a.cnt);
-
-        document.getElementById('totalWeekFine').innerText = weekFineTotal.toLocaleString() + "원";
-        document.getElementById('totalMonthSave').innerText = monthSaveTotal.toLocaleString() + "원";
-        
-        let html = "";
-        summary.forEach((s, i) => {
-            const badges = ['월','화','수','목','금','토','일'].map((n, idx) => {
-                let cls = s.dBit[idx] ? "day-badge active" : "day-badge";
-                if (s.globalIng && (new Date(s.globalIng.date.replace(/-/g, '/')).getDay() + 6) % 7 === idx) cls = "day-badge ing";
-                return `<div class="${cls}" onclick="editLog('${s.name}', ${idx})">${cls.includes('ing') ? 'ing' : n}</div>`;
-            }).join('');
-            html += `<tr class="${s.globalIng ? 'is-working' : ''}"><td>${i+1}</td><td style="font-weight:bold">${s.name}</td><td>${badges}</td><td>${s.cnt}</td><td style="color:var(--danger)">${s.fine}</td></tr>`;
-        });
-        document.getElementById('statTable').innerHTML = html;
     }
 
     function editLog(name, dayIdx) {
@@ -379,25 +449,50 @@
 
     function closeActionModal() { document.getElementById('actionModal').style.display = 'none'; }
     function toggleView(id, show) { document.getElementById(id).style.display = show ? 'block' : 'none'; }
-    async function resetData() { if(confirm("데이터를 초기화하시겠습니까?")) { await dataPath.set(null); await payPath.set(null); } }
+    async function resetData() { if(confirm("전체 데이터(납부, 활동중지 포함)를 초기화하시겠습니까?")) { await dataPath.set(null); await payPath.set(null); await adminPath.set(null); } }
+    
+    // 3. 백업 시 납부 정보도 CSV 하단에 포함
     function downloadCSV() {
         let csv = "\uFEFF이름,날짜,시작시간,종료시간\n";
         allData.forEach(r => { csv += `${r.name},${r.date},${r.start},${r.end}\n`; });
+        
+        csv += "\n[납부 정보]\n키,납부여부\n";
+        Object.keys(paymentData).forEach(k => {
+            csv += `${k},${paymentData[k]}\n`;
+        });
+
         const a = document.createElement("a");
         a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
         a.download = `삼영백업_${new Date().toISOString().split('T')[0]}.csv`;
         a.click();
     }
+    
     function importCSV(input) {
         const file = input.files[0]; if (!file) return;
         const reader = new FileReader();
         reader.onload = async (e) => {
-            const rows = e.target.result.split('\n').slice(1);
-            const imported = rows.filter(r => r.trim()).map(r => {
+            const content = e.target.result;
+            const sections = content.split('\n[납부 정보]\n');
+            
+            const rows = sections[0].split('\n').slice(1);
+            const importedData = rows.filter(r => r.trim()).map(r => {
                 const cols = r.split(',');
                 return { name: cols[0], date: cols[1], start: cols[2], end: cols[3] ? cols[3].trim() : "" };
             });
-            if (confirm(`${imported.length}개 데이터를 복구할까요?`)) await dataPath.set(imported);
+
+            if (sections[1]) {
+                const payRows = sections[1].split('\n').slice(2);
+                payRows.forEach(r => {
+                    if(!r.trim()) return;
+                    const cols = r.split(',');
+                    paymentData[cols[0]] = (cols[1].trim() === 'true');
+                });
+            }
+
+            if (confirm(`${importedData.length}개 데이터를 복구할까요?`)) {
+                await dataPath.set(importedData);
+                await payPath.set(paymentData);
+            }
         };
         reader.readAsText(file);
     }
