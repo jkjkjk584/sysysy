@@ -11,6 +11,7 @@
         :root { 
             --primary: #5da3d9; --danger: #e66755; 
             --success: #5cc97e; --warning: #ff9800; 
+            --kakao: #fee500; --kakao-text: #3c1e1e; /* 카카오 색상 추가 */
             --bg: #f2f4f7; --text: #333; --working: #fff9f0; 
         }
         body { font-family: 'Pretendard', sans-serif; background: var(--bg); margin: 0; padding: 10px; color: var(--text); -webkit-tap-highlight-color: transparent; }
@@ -24,13 +25,13 @@
         .day-card.selected { background: var(--primary); border-color: var(--primary); color: white; }
         .day-card.today { border: 1.5px solid var(--success); }
         
-        .input-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
-        .input-row { display: flex; gap: 6px; }
-        select { flex: 1.5; padding: 10px; border-radius: 12px; border: 1px solid #ddd; font-weight: bold; font-size: 0.9rem; }
-        .btn { flex: 1; border: none; border-radius: 12px; color: white; font-weight: bold; cursor: pointer; font-size: 0.85rem; padding: 12px 5px; }
-        .btn-start { background: var(--primary); }
-        .btn-end { background: var(--danger); }
-        .btn-manual { background: #888; }
+        /* [수정] 한 줄 레이아웃 디자인 */
+        .action-row { display: flex; gap: 4px; margin-bottom: 15px; align-items: stretch; }
+        .action-row select { flex: 1.2; padding: 8px; border-radius: 10px; border: 1px solid #ddd; font-weight: bold; font-size: 0.8rem; outline: none; background: #fff; }
+        .action-row .btn { flex: 1; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 0.7rem; padding: 10px 2px; white-space: nowrap; }
+        
+        .btn-manual { background: #888; color: white; }
+        .btn-kakao { background: var(--kakao); color: var(--kakao-text); } /* 노란색 버튼 */
 
         .table-wrapper { overflow-x: auto; margin-bottom: 12px; border-radius: 16px; border: 1px solid #f0f0f0; }
         table { width: 100%; border-collapse: collapse; font-size: 0.72rem; min-width: auto; table-layout: fixed; }
@@ -100,7 +101,7 @@
             <thead><tr><th>이름</th><th>횟수</th><th>벌금</th><th>납부</th></tr></thead>
             <tbody id="lastWeekReportBody"></tbody>
         </table>
-        <button class="btn btn-start" style="width:100%; margin-top:15px; padding:12px;" onclick="savePayments()">납부 상태 저장하기</button>
+        <button class="btn btn-manual" style="width:100%; margin-top:15px; padding:12px; color:white;" onclick="savePayments()">납부 상태 저장하기</button>
     </div>
     <div class="report-section">
         <div class="report-title">💰 누적 벌금 정산 (월/년)</div>
@@ -124,9 +125,9 @@
     <div class="report-section">
         <div class="report-title">💾 데이터 관리</div>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-            <button class="btn" style="background:#666;" onclick="downloadCSV()">백업(CSV)</button>
-            <button class="btn" style="background:#888;" onclick="document.getElementById('csvUpload').click()">복구(CSV)</button>
-            <button class="btn btn-end" style="grid-column: span 2;" onclick="resetData()">전체 초기화</button>
+            <button class="btn btn-manual" style="color:white;" onclick="downloadCSV()">백업(CSV)</button>
+            <button class="btn btn-manual" style="color:white;" onclick="document.getElementById('csvUpload').click()">복구(CSV)</button>
+            <button class="btn btn-end" style="grid-column: span 2; background:var(--danger); color:white; padding:12px;" onclick="resetData()">전체 초기화</button>
         </div>
     </div>
 </div>
@@ -136,15 +137,11 @@
     <div class="timer-box" id="timerDisplay">D-Day 계산 중...</div>
     <div class="week-grid" id="weekSelector"></div>
 
-    <div class="input-group">
-        <div class="input-row">
-            <select id="nameSelect"><option value="">이름 선택</option></select>
-            <button class="btn btn-manual" onclick="manualRecord()">운동기록추가</button>
-        </div>
-        <div class="input-row">
-            <button class="btn btn-start" onclick="openActionModal('START')">카카오톡으로 운동시작</button>
-            <button class="btn btn-end" onclick="openActionModal('END')">카카오톡으로 운동종료</button>
-        </div>
+    <div class="action-row">
+        <select id="nameSelect"><option value="">이름 선택</option></select>
+        <button class="btn btn-manual" onclick="manualRecord()">기록추가</button>
+        <button class="btn btn-kakao" onclick="openActionModal('START')">카톡시작</button>
+        <button class="btn btn-kakao" onclick="openActionModal('END')">카톡종료</button>
     </div>
 
     <div class="table-wrapper">
@@ -175,6 +172,7 @@
 </div>
 
 <script>
+    // --- 기존 로직 (데이터 처리, 카카오 연동 등) 보존 ---
     if (!Kakao.isInitialized()) Kakao.init('586678c7f1fd7c2d42c3f3b922499b65');
 
     const config = { databaseURL: "https://samyoung-61ed1-default-rtdb.asia-southeast1.firebasedatabase.app" };
@@ -192,15 +190,12 @@
     let pendingAction = null;
     const FINE_START_DATE = "2026-03-09";
 
-    // [수정] 모바일 최적화된 카카오 공유 로직
     const imgInput = document.getElementById('kakaoImageInput');
     imgInput.onchange = (e) => {
         const file = e.target.files[0];
         if (file && pendingAction) {
             const { name, type } = pendingAction;
-            // 로딩 메시지 출력 (사용자 경험 개선)
             document.getElementById('actionMsg').innerText = "사진 업로드 중... 잠시만 기다려주세요.";
-            
             Kakao.Share.uploadImage({ file: [file] })
             .then(res => {
                 const imageUrl = res.infos.original.url;
@@ -212,24 +207,15 @@
                         imageUrl: imageUrl,
                         link: { mobileWebUrl: window.location.href, webUrl: window.location.href }
                     },
-                    buttons: [{
-                        title: '기록 확인하기',
-                        link: { mobileWebUrl: window.location.href, webUrl: window.location.href }
-                    }]
+                    buttons: [{ title: '기록 확인하기', link: { mobileWebUrl: window.location.href, webUrl: window.location.href } }]
                 });
                 saveDataAfterShare(type, name);
             })
-            .catch(err => {
-                alert('이미지 업로드에 실패했습니다. (모바일 네트워크 확인 필요)');
-                console.error(err);
-            });
+            .catch(err => { alert('이미지 업로드에 실패했습니다.'); console.error(err); });
         }
     };
 
-    function startKakaoShare() {
-        imgInput.click(); // 실제 존재하는 input을 클릭하여 모바일 보안 우회
-    }
-
+    function startKakaoShare() { imgInput.click(); }
     async function saveDataAfterShare(type, name) {
         const now = new Date();
         const time = now.getHours().toString().padStart(2,'0') + ":" + now.getMinutes().toString().padStart(2,'0') + ":" + now.getSeconds().toString().padStart(2,'0');
@@ -247,11 +233,9 @@
             let list = [...allData];
             list.push({ name, date: selectedDate, start: "00:00:00", end: "00:50:00" });
             await dataPath.set(list);
-            alert("수동 추가 완료!");
         }
     }
 
-    // --- JK님 원본 JS 로직 보존 ---
     function init() {
         const sel = document.getElementById('nameSelect');
         members.forEach(m => { sel.innerHTML += `<option value="${m}">${m}</option>`; });
@@ -360,8 +344,7 @@
 
     function renderLastWeekReport() {
         const now = new Date();
-        const lastMon = new Date(now);
-        lastMon.setDate(now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1) - 7);
+        const lastMon = new Date(now); lastMon.setDate(now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1) - 7);
         const lastMonStr = lastMon.toISOString().split('T')[0];
         const lastSunStr = new Date(lastMon.getTime() + 6*86400000).toISOString().split('T')[0];
         const weekKey = `W_${lastMonStr}`;
@@ -443,7 +426,6 @@
         document.getElementById('actionModal').style.display = 'flex';
     }
 
-    // [수정] 버튼 클릭 시 모바일용 공유 함수 호출
     document.getElementById('actionConfirmBtn').onclick = () => {
         const { type } = pendingAction;
         if(type === 'END' && document.getElementById('shortTimeConfirm').style.display === 'block' && !document.getElementById('confirmCheck').checked) return alert("확인 체크박스에 체크해주세요.");
