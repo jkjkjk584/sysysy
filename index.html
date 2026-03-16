@@ -30,16 +30,14 @@
         .btn-end { background: var(--danger); }
 
         .table-wrapper { overflow-x: auto; margin-bottom: 12px; border-radius: 16px; border: 1px solid #f0f0f0; }
-        /* 수정된 부분: 테이블 간격 및 너비 최적화 */
         table { width: 100%; border-collapse: collapse; font-size: 0.72rem; min-width: auto; table-layout: fixed; }
         th { padding: 10px 2px; background: #fafafa; color: #888; text-align: center; }
         td { padding: 10px 2px; border-bottom: 1px solid #f9f9f9; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        /* 컬럼별 너비 지정 */
-        th:nth-child(1), td:nth-child(1) { width: 10%; } /* 순위 */
-        th:nth-child(2), td:nth-child(2) { width: 18%; } /* 이름 */
-        th:nth-child(3), td:nth-child(3) { width: 48%; } /* 주간 현황 */
-        th:nth-child(4), td:nth-child(4) { width: 10%; } /* 회 */
-        th:nth-child(5), td:nth-child(5) { width: 14%; } /* 벌금 */
+        th:nth-child(1), td:nth-child(1) { width: 10%; }
+        th:nth-child(2), td:nth-child(2) { width: 18%; }
+        th:nth-child(3), td:nth-child(3) { width: 48%; }
+        th:nth-child(4), td:nth-child(4) { width: 10%; }
+        th:nth-child(5), td:nth-child(5) { width: 14%; }
         
         tr.is-working { background-color: var(--working) !important; }
         tr.is-disabled { opacity: 0.5; background-color: #f5f5f5; }
@@ -180,9 +178,10 @@
     const config = { databaseURL: "https://samyoung-61ed1-default-rtdb.asia-southeast1.firebasedatabase.app" };
     firebase.initializeApp(config);
     const db = firebase.database();
-    const dataPath = db.ref('sy_master_v29'); 
-    const payPath = db.ref('sy_payments_v29');
-    const adminPath = db.ref('sy_admin_v29');
+    
+    const dataPath = db.ref('sy_master_v34'); 
+    const payPath = db.ref('sy_payments_v34');
+    const adminPath = db.ref('sy_admin_v34');
 
     const members = ["우은미", "이계주", "김재현", "김종엽", "서호진", "이송희", "정환균", "황재균"];
     let selectedDate = new Date().toISOString().split('T')[0];
@@ -191,8 +190,13 @@
     let adminSettings = {};
     let pendingAction = null;
 
-    // 벌금시스템 적용 시작일: 2026년 3월 2째주 월요일 (3월 9일)
     const FINE_START_DATE = "2026-03-09";
+
+    // 날짜 안전 생성 함수 (타임존 오류 방지)
+    function safeDate(dateStr) {
+        if (!dateStr) return new Date();
+        return new Date(dateStr.replace(/-/g, '/') + ' 12:00:00');
+    }
 
     function init() {
         const sel = document.getElementById('nameSelect');
@@ -225,10 +229,11 @@
     }
 
     function getMonday(d) {
-        let date = new Date(d);
+        let date = safeDate(d);
         let day = date.getDay();
-        let diff = date.getDate() - day + (day === 0 ? -6 : 1);
-        return new Date(date.setDate(diff)).toISOString().split('T')[0];
+        let diff = date.getDate() - (day === 0 ? 6 : day - 1);
+        let monday = new Date(date.setDate(diff));
+        return monday.toISOString().split('T')[0];
     }
 
     function renderCalendar() {
@@ -237,17 +242,19 @@
         const now = new Date();
         const year = now.getFullYear();
         
-        const firstDayDate = new Date(year, calMonth - 1, 1);
-        const emptyCells = (firstDayDate.getDay() + 6) % 7; 
+        const firstDayDate = new Date(year, calMonth - 1, 1, 12, 0, 0);
+        let emptyCells = firstDayDate.getDay();
+        emptyCells = emptyCells === 0 ? 6 : emptyCells - 1; 
+
         const lastDate = new Date(year, calMonth, 0).getDate();
         
         let html = ['월','화','수','목','금','토','일'].map(d => `<div class="cal-day-head" style="${d==='일'?'color:red':''}">${d}</div>`).join('');
         for(let i=0; i<emptyCells; i++) html += `<div class="cal-cell"></div>`;
         
         for(let d=1; d<=lastDate; d++) {
-            const dateObj = new Date(year, calMonth - 1, d);
-            const isSunday = dateObj.getDay() === 0;
             const ds = `${year}-${String(calMonth).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+            const dateObj = safeDate(ds);
+            const isSunday = dateObj.getDay() === 0;
             const currentMon = getMonday(ds);
             
             let gauges = "";
@@ -296,10 +303,7 @@
     }
 
     function renderTable(data) {
-        const now = new Date();
-        const startDay = new Date(now); 
-        startDay.setDate(now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1));
-        const monStr = startDay.toISOString().split('T')[0];
+        const monStr = getMonday(new Date().toISOString().split('T')[0]);
         let weekFineTotal = 0; let monthSaveTotal = 0;
 
         const summary = members.map(m => {
@@ -307,16 +311,23 @@
             const wLogs = data.filter(d => d.name === m && d.date >= monStr);
             const globalIng = data.find(d => d.name === m && d.end === "");
             const dBit = [0,0,0,0,0,0,0];
+            
             wLogs.forEach(l => {
                 if(l.end) {
-                    const logDate = new Date(l.date.replace(/-/g, '/'));
-                    dBit[(logDate.getDay() + 6) % 7] = 1;
+                    const logDate = safeDate(l.date);
+                    const dayIdx = logDate.getDay() === 0 ? 6 : logDate.getDay() - 1;
+                    dBit[dayIdx] = 1;
                 }
             });
             const cnt = dBit.filter(b => b === 1).length;
             const fine = calculateFineAmount(cnt, isOff);
             weekFineTotal += fine;
-            monthSaveTotal += (data.filter(d => d.name === m && d.date >= "2026-03-01" && d.end).length * 1000);
+            
+            const currentMonth = new Date().getMonth() + 1;
+            const currentYear = new Date().getFullYear();
+            const monthStartStr = `${currentYear}-${String(currentMonth).padStart(2,'0')}-01`;
+            monthSaveTotal += (data.filter(d => d.name === m && d.date >= monthStartStr && d.end).length * 1000);
+            
             return { name: m, cnt, fine, dBit, globalIng, isOff };
         }).sort((a,b) => b.cnt - a.cnt);
 
@@ -327,7 +338,11 @@
         summary.forEach((s, i) => {
             const badges = ['월','화','수','목','금','토','일'].map((n, idx) => {
                 let cls = s.dBit[idx] ? "day-badge active" : "day-badge";
-                if (s.globalIng && (new Date(s.globalIng.date.replace(/-/g, '/')).getDay() + 6) % 7 === idx) cls = "day-badge ing";
+                if (s.globalIng) {
+                    const ingDate = safeDate(s.globalIng.date);
+                    const ingIdx = ingDate.getDay() === 0 ? 6 : ingDate.getDay() - 1;
+                    if (ingIdx === idx) cls = "day-badge ing";
+                }
                 return `<div class="${cls}" onclick="editLog('${s.name}', ${idx})">${cls.includes('ing') ? 'ing' : n}</div>`;
             }).join('');
             html += `<tr class="${s.globalIng ? 'is-working' : ''} ${s.isOff ? 'is-disabled' : ''}">
@@ -353,10 +368,13 @@
 
     function renderLastWeekReport() {
         const now = new Date();
-        const lastMon = new Date(now);
-        lastMon.setDate(now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1) - 7);
-        const lastMonStr = lastMon.toISOString().split('T')[0];
-        const lastSunStr = new Date(lastMon.getTime() + 6*86400000).toISOString().split('T')[0];
+        const lastMonDate = safeDate(getMonday(now.toISOString().split('T')[0]));
+        lastMonDate.setDate(lastMonDate.getDate() - 7);
+        const lastMonStr = lastMonDate.toISOString().split('T')[0];
+        
+        const lastSunDate = new Date(lastMonDate);
+        lastSunDate.setDate(lastSunDate.getDate() + 6);
+        const lastSunStr = lastSunDate.toISOString().split('T')[0];
         const weekKey = `W_${lastMonStr}`;
 
         let html = "";
@@ -369,7 +387,6 @@
             const cnt = dates.size;
             
             const fine = (lastMonStr < FINE_START_DATE) ? 0 : calculateFineAmount(cnt, isOff);
-            
             const isPaid = paymentData[`${m}_${weekKey}`] || false;
             if(!isPaid) totalUnpaid += fine;
 
@@ -391,29 +408,26 @@
         const month = now.getMonth() + 1;
         document.getElementById('currentMonthTitle').innerText = `${month}월 누적`;
 
-        const todayMon = new Date(getMonday(now));
+        const todayMon = safeDate(getMonday(now.toISOString().split('T')[0]));
 
         let html = members.map(m => {
-            const getAccumulatedFine = (startDate, limitDate) => {
+            const getAccumulatedFine = (startDateStr, limitDateObj) => {
                 let totalFine = 0;
-                let current = new Date(startDate);
+                let current = safeDate(startDateStr);
+                const fineStart = safeDate(FINE_START_DATE);
+                if (current < fineStart) current = new Date(fineStart);
                 
-                if (current < new Date(FINE_START_DATE)) {
-                    current = new Date(FINE_START_DATE);
-                }
-                
-                while (current < limitDate) {
-                    const monStr = getMonday(current);
-                    const sun = new Date(monStr); 
+                while (current < limitDateObj) {
+                    const monStr = getMonday(current.toISOString().split('T')[0]);
+                    const sun = safeDate(monStr); 
                     sun.setDate(sun.getDate() + 6);
                     const sunStr = sun.toISOString().split('T')[0];
                     
-                    if (new Date(sunStr) < limitDate) {
+                    if (safeDate(sunStr) < limitDateObj) {
                         const logs = allData.filter(d => d.name === m && d.date >= monStr && d.date <= sunStr && d.end);
                         const cnt = new Set(logs.map(l => l.date)).size;
                         totalFine += calculateFineAmount(cnt, false);
                     }
-                    
                     current.setDate(current.getDate() + 7);
                 }
                 return totalFine;
@@ -432,12 +446,11 @@
     }
 
     function editLog(name, dayIdx) {
-        const now = new Date();
-        const startDay = new Date(now); 
-        startDay.setDate(now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1));
+        const startDay = safeDate(getMonday(selectedDate));
         const targetDate = new Date(startDay);
         targetDate.setDate(startDay.getDate() + dayIdx);
         const dateStr = targetDate.toISOString().split('T')[0];
+        
         const record = allData.find(r => r.name === name && r.date === dateStr);
         if(!record) return;
         if(confirm(`[${name}] ${dateStr} 기록을 삭제할까요?`)) {
@@ -464,7 +477,7 @@
         } else {
             if(!globalIng) return alert("진행 중인 운동이 없습니다.");
             const startParts = globalIng.start.split(':');
-            const startTime = new Date(globalIng.date.replace(/-/g, '/'));
+            const startTime = safeDate(globalIng.date);
             startTime.setHours(parseInt(startParts[0]), parseInt(startParts[1]), parseInt(startParts[2] || 0));
             const diff = Math.floor((new Date() - startTime) / 60000);
             document.getElementById('actionTitle').innerText = "기록 종료 💪";
@@ -490,7 +503,8 @@
 
     function renderWeekCards() {
         const container = document.getElementById('weekSelector');
-        const startDay = new Date(); startDay.setDate(new Date().getDate() - (new Date().getDay() === 0 ? 6 : new Date().getDay() - 1));
+        const monStr = getMonday(new Date().toISOString().split('T')[0]);
+        const startDay = safeDate(monStr);
         container.innerHTML = '';
         for(let i=0; i<7; i++) {
             const d = new Date(startDay); d.setDate(startDay.getDate() + i);
@@ -505,7 +519,8 @@
 
     function tick() {
         const now = new Date();
-        const sun = new Date(); sun.setDate(now.getDate() + (now.getDay() === 0 ? 0 : 7 - now.getDay())); sun.setHours(24,0,0,0);
+        const sun = safeDate(getMonday(now.toISOString().split('T')[0]));
+        sun.setDate(sun.getDate() + 7); sun.setHours(0,0,0,0);
         const diff = sun - now;
         const h = String(Math.floor((diff/3600000)%24)).padStart(2,'0'), m = String(Math.floor((diff/60000)%60)).padStart(2,'0'), s = String(Math.floor((diff/1000)%60)).padStart(2,'0');
         document.getElementById('timerDisplay').innerText = `정산까지: ${Math.floor(diff/86400000)}일 ${h}:${m}:${s}`;
@@ -513,7 +528,8 @@
 
     function updateHeaderTitle() {
         const now = new Date();
-        const wk = Math.ceil((now.getDate() + new Date(now.getFullYear(), now.getMonth(), 1).getDay()) / 7);
+        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+        const wk = Math.ceil((now.getDate() + firstDay.getDay() - 1) / 7);
         document.getElementById('mainTitle').innerText = `🔥 삼영건강증진회 ${now.getMonth()+1}월 ${wk}주차 🔥`;
     }
 
@@ -524,12 +540,8 @@
     function downloadCSV() {
         let csv = "\uFEFF이름,날짜,시작시간,종료시간\n";
         allData.forEach(r => { csv += `${r.name},${r.date},${r.start},${r.end}\n`; });
-        
         csv += "\n[납부 정보]\n키,납부여부\n";
-        Object.keys(paymentData).forEach(k => {
-            csv += `${k},${paymentData[k]}\n`;
-        });
-
+        Object.keys(paymentData).forEach(k => { csv += `${k},${paymentData[k]}\n`; });
         const a = document.createElement("a");
         a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
         a.download = `삼영백업_${new Date().toISOString().split('T')[0]}.csv`;
@@ -542,13 +554,11 @@
         reader.onload = async (e) => {
             const content = e.target.result;
             const sections = content.split('\n[납부 정보]\n');
-            
             const rows = sections[0].split('\n').slice(1);
             const importedData = rows.filter(r => r.trim()).map(r => {
                 const cols = r.split(',');
                 return { name: cols[0], date: cols[1], start: cols[2], end: cols[3] ? cols[3].trim() : "" };
             });
-
             if (sections[1]) {
                 const payRows = sections[1].split('\n').slice(2);
                 payRows.forEach(r => {
@@ -557,7 +567,6 @@
                     paymentData[cols[0]] = (cols[1].trim() === 'true');
                 });
             }
-
             if (confirm(`${importedData.length}개 데이터를 복구할까요?`)) {
                 await dataPath.set(importedData);
                 await payPath.set(paymentData);
