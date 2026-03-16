@@ -10,69 +10,86 @@
     <style>
         :root { --primary: #5da3d9; --danger: #e66755; --success: #5cc97e; --bg: #f2f4f7; --text: #333; --working: #eef7ff; }
         body { font-family: 'Pretendard', sans-serif; background: var(--bg); margin: 0; padding: 10px; color: var(--text); -webkit-tap-highlight-color: transparent; }
-        .container { max-width: 500px; margin: 0 auto; background: white; padding: 15px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        .container { max-width: 500px; margin: 0 auto; background: white; padding: 15px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
 
-        .header-banner { background: linear-gradient(to right, #5da3d9, #5cc97e); padding: 18px; border-radius: 15px; color: white; text-align: center; margin-bottom: 12px; font-weight: bold; font-size: 1.1rem; }
-        .timer-box { border: 1px dashed var(--danger); background: #fff9f9; padding: 8px; border-radius: 10px; text-align: center; color: var(--danger); font-weight: bold; font-size: 0.8rem; margin-bottom: 15px; }
+        .header-banner { background: linear-gradient(135deg, #5da3d9, #5cc97e); padding: 18px; border-radius: 18px; color: white; text-align: center; margin-bottom: 12px; font-weight: bold; font-size: 1.1rem; }
+        .timer-box { border: 1px dashed var(--danger); background: #fff9f9; padding: 8px; border-radius: 12px; text-align: center; color: var(--danger); font-weight: bold; font-size: 0.8rem; margin-bottom: 15px; }
 
-        /* 요일 한 줄 스크롤 스타일 */
-        .week-grid { display: flex; overflow-x: auto; gap: 8px; margin-bottom: 15px; padding-bottom: 5px; -ms-overflow-style: none; scrollbar-width: none; }
+        .week-grid { display: flex; overflow-x: auto; gap: 8px; margin-bottom: 15px; padding-bottom: 5px; scrollbar-width: none; }
         .week-grid::-webkit-scrollbar { display: none; }
-        .day-card { flex: 0 0 auto; min-width: 60px; background: #f8f9fa; border: 1px solid #eee; border-radius: 12px; padding: 10px 0; text-align: center; cursor: pointer; }
-        .day-card b { font-size: 0.8rem; color: #555; }
-        .day-card.selected { background: var(--primary); border-color: var(--primary); }
-        .day-card.selected b { color: white; }
+        .day-card { flex: 0 0 auto; min-width: 60px; background: #f8f9fa; border: 1px solid #eee; border-radius: 14px; padding: 10px 0; text-align: center; cursor: pointer; }
+        .day-card.selected { background: var(--primary); border-color: var(--primary); color: white; }
         .day-card.today { border: 2px solid var(--success); }
 
         .input-group { display: flex; gap: 8px; margin-bottom: 15px; }
-        select { flex: 1.5; padding: 10px; border-radius: 12px; border: 1px solid #ddd; font-weight: bold; height: 46px; outline: none; font-size: 0.9rem; }
-        .btn { flex: 1; border: none; border-radius: 12px; color: white; font-weight: bold; cursor: pointer; font-size: 0.85rem; }
+        select { flex: 1.5; padding: 10px; border-radius: 12px; border: 1px solid #ddd; font-weight: bold; }
+        .btn { flex: 1; border: none; border-radius: 12px; color: white; font-weight: bold; cursor: pointer; font-size: 0.9rem; }
         .btn-start { background: var(--primary); }
         .btn-end { background: var(--danger); }
 
-        .table-wrapper { overflow-x: auto; margin-bottom: 15px; border-radius: 12px; border: 1px solid #f0f0f0; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.78rem; min-width: 450px; }
-        th { padding: 10px 5px; background: #fafafa; color: #999; }
+        .table-wrapper { overflow-x: auto; margin-bottom: 15px; border-radius: 16px; border: 1px solid #f0f0f0; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.8rem; min-width: 400px; }
+        th { padding: 12px 5px; background: #fafafa; color: #888; }
         td { padding: 12px 5px; border-bottom: 1px solid #f9f9f9; text-align: center; }
-        
         tr.is-working { background-color: var(--working) !important; }
         .day-badge { width: 22px; height: 22px; line-height: 22px; border-radius: 50%; background: #f0f0f0; color: #ccc; font-size: 9px; font-weight: bold; display: inline-block; margin: 0 1px; cursor: pointer; }
         .day-badge.active { background: var(--success); color: white; }
-        .day-badge.ing { background: var(--primary); color: white; font-style: italic; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+        .day-badge.ing { background: var(--primary); color: white; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
-        #historyView { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000; overflow-y: auto; padding: 20px 10px; box-sizing: border-box; }
+        .summary-box { background: #f8f9fa; padding: 15px; border-radius: 16px; margin-bottom: 15px; display: flex; justify-content: space-around; text-align: center; border: 1px solid #eee; }
+        .summary-item b { display: block; font-size: 1.1rem; margin-top: 4px; }
+        .summary-item.fine { color: var(--danger); }
+        .summary-item.save { color: var(--primary); }
+
+        .mini-menu { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+        .btn-mini { padding: 6px 12px; font-size: 0.75rem; border-radius: 8px; border: 1px solid #ddd; background: #fff; color: #777; cursor: pointer; }
+
+        /* 리포트 달력 스타일 */
+        .full-layer { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000; overflow-y: auto; padding: 15px; box-sizing: border-box; }
+        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; background: #eee; border: 1px solid #eee; margin-top: 10px; }
+        .cal-day-head { background: #f8f9fa; padding: 5px; text-align: center; font-size: 0.7rem; font-weight: bold; color: #999; }
+        .cal-cell { background: white; min-height: 60px; padding: 4px; font-size: 0.65rem; position: relative; }
+        .cal-date-num { font-weight: bold; color: #ccc; margin-bottom: 2px; display: block; }
+        .cal-member-tag { background: #eef7ff; color: #5da3d9; padding: 1px 3px; border-radius: 3px; display: block; margin-bottom: 1px; font-size: 0.6rem; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
         #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 3000; justify-content: center; align-items: center; }
         .modal-box { background: white; padding: 20px; border-radius: 20px; width: 85%; max-width: 300px; text-align: center; }
-        .btn-full { width: 100%; padding: 14px; border: none; border-radius: 12px; font-weight: bold; margin-bottom: 8px; cursor: pointer; color: white; font-size: 0.9rem; }
     </style>
 </head>
 <body>
 
-<div id="historyView">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-        <h2 style="margin:0">📅 지난 운동 기록</h2>
-        <button onclick="toggleHistory(false)" style="border:none; background:#eee; padding:8px 15px; border-radius:10px; font-weight:bold;">닫기</button>
+<div id="historyView" class="full-layer">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2 style="margin:0; font-size:1.2rem;">📅 운동 달력</h2>
+        <button onclick="toggleView('historyView', false)" style="border:none; background:#eee; padding:8px 15px; border-radius:10px; font-weight:bold;">닫기</button>
     </div>
-    <div id="historyContent"></div>
+    
+    <div style="margin: 15px 0; text-align: center;">
+        <select id="calMonthSelect" onchange="renderCalendar()" style="padding:8px; border-radius:8px; border:1px solid #ddd; font-weight:bold;">
+            </select>
+    </div>
+
+    <div class="cal-grid" id="calendarGrid"></div>
+    <div id="historyContent" style="margin-top:20px;"></div>
 </div>
 
 <div id="modal">
     <div class="modal-box">
-        <h3 id="modalTitle" style="margin-top:0">기록 수정</h3>
-        <input type="text" id="editStart" style="width:90%; padding:10px; margin:5px 0; border:1px solid #ddd; border-radius:8px; text-align:center;">
-        <input type="text" id="editEnd" style="width:90%; padding:10px; margin:5px 0; border:1px solid #ddd; border-radius:8px; text-align:center;">
+        <h3 id="modalTitle">수정</h3>
+        <input type="text" id="editStart" style="width:90%; padding:10px; margin-bottom:5px; border:1px solid #ddd; border-radius:8px;">
+        <input type="text" id="editEnd" style="width:90%; padding:10px; border:1px solid #ddd; border-radius:8px;">
         <div style="display:flex; gap:5px; margin-top:15px;">
             <button onclick="saveEdit()" style="flex:1; background:var(--primary); color:white; border:none; padding:10px; border-radius:8px;">저장</button>
             <button onclick="deleteRecord()" style="flex:1; background:var(--danger); color:white; border:none; padding:10px; border-radius:8px;">삭제</button>
-            <button onclick="closeModal()" style="flex:1; background:#ddd; border:none; padding:10px; border-radius:8px;">취소</button>
         </div>
+        <button onclick="closeModal()" style="margin-top:10px; border:none; background:none; color:#999;">취소</button>
     </div>
 </div>
 
 <div class="container">
     <div class="header-banner"><span id="mainTitle">로드 중...</span></div>
-    <div class="timer-box" id="timerDisplay">계산 중...</div>
+    <div class="timer-box" id="timerDisplay">D-Day 계산 중...</div>
     
     <div class="week-grid" id="weekSelector"></div>
 
@@ -84,14 +101,23 @@
 
     <div class="table-wrapper">
         <table>
-            <thead><tr><th>순위</th><th>이름</th><th>주간 현황</th><th>주</th><th>벌금</th><th style="background:#fffdeb;">적립금</th></tr></thead>
+            <thead><tr><th>순위</th><th>이름</th><th>주간 현황</th><th>회</th><th>벌금</th></tr></thead>
             <tbody id="statTable"></tbody>
         </table>
     </div>
 
-    <button class="btn-full" style="background:#6c5ce7;" onclick="toggleHistory(true)">📅 지난 운동 기록 보기</button>
-    <button class="btn-full" style="background:#5cc97e;" onclick="downloadData()">📊 엑셀 다운로드</button>
-    <button class="btn-full" style="background:#cbd5e0;" onclick="resetData()">⚙️ 전체 데이터 초기화</button>
+    <div class="summary-box">
+        <div class="summary-item fine"><span>주간 전체 벌금</span><b id="totalWeekFine">0원</b></div>
+        <div class="summary-item save"><span>월간 누적 적립</span><b id="totalMonthSave">0원</b></div>
+    </div>
+
+    <div class="mini-menu">
+        <button class="btn-mini" onclick="toggleView('historyView', true)">📊 리포트</button>
+        <button class="btn-mini" onclick="downloadCSV()">💾 CSV 백업</button>
+        <button class="btn-mini" onclick="document.getElementById('csvUpload').click()">📥 CSV 복구</button>
+        <button class="btn-mini" onclick="resetData()">⚙️ 초기화</button>
+    </div>
+    <input type="file" id="csvUpload" accept=".csv" style="display:none;" onchange="importCSV(this)">
 </div>
 
 <input type="file" id="photoInput" accept="image/*" style="display:none;">
@@ -104,69 +130,146 @@
     };
     firebase.initializeApp(config);
     const db = firebase.database();
-    const dataPath = db.ref('sy_master_v8'); 
+    const dataPath = db.ref('sy_master_v12'); 
 
     if (!Kakao.isInitialized()) Kakao.init('586678c7f1fd7c2d42c3f3b922499b65');
 
     const members = ["우은미", "이계주", "김재현", "김종엽", "서호진", "이송희", "정환균", "황재균"];
     let selectedDate = new Date().toISOString().split('T')[0];
     let allData = [];
+    let currentEdit = null;
 
     function init() {
         const sel = document.getElementById('nameSelect');
         members.forEach(m => { sel.innerHTML += `<option value="${m}">${m}</option>`; });
+        
+        // 월 선택 셀렉트박스 초기화 (최근 6개월)
+        const monthSel = document.getElementById('calMonthSelect');
+        for(let i=0; i<6; i++) {
+            const d = new Date(); d.setMonth(d.getMonth() - i);
+            const val = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+            monthSel.innerHTML += `<option value="${val}">${d.getFullYear()}년 ${d.getMonth()+1}월</option>`;
+        }
+
         renderWeekCards();
         updateHeaderTitle();
         dataPath.on('value', snap => {
             allData = snap.val() || [];
             renderTable(allData);
-            renderHistory(allData);
+            renderCalendar();
         });
         setInterval(tick, 1000);
     }
 
-    function renderWeekCards() {
-        const container = document.getElementById('weekSelector');
+    // [추가요청] 달력형 리포트 렌더링
+    function renderCalendar() {
+        const grid = document.getElementById('calendarGrid');
+        const monthVal = document.getElementById('calMonthSelect').value;
+        const [year, month] = monthVal.split('-').map(Number);
+        
+        const firstDay = new Date(year, month - 1, 1).getDay(); // 0(일) ~ 6(토)
+        const lastDate = new Date(year, month, 0).getDate();
+        
+        let html = ['일','월','화','수','목','금','토'].map(d => `<div class="cal-day-head">${d}</div>`).join('');
+        
+        // 빈칸
+        for(let i=0; i<firstDay; i++) { html += `<div class="cal-cell" style="background:#fafafa"></div>`; }
+        
+        // 날짜 칸
+        for(let d=1; d<=lastDate; d++) {
+            const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+            const records = allData.filter(r => r.date === dateStr && r.end);
+            const memberTags = records.map(r => `<span class="cal-member-tag">${r.name}</span>`).join('');
+            
+            html += `
+                <div class="cal-cell">
+                    <span class="cal-date-num">${d}</span>
+                    ${memberTags}
+                </div>`;
+        }
+        grid.innerHTML = html;
+    }
+
+    function downloadCSV() {
+        let csv = "\uFEFF이름,날짜,시작시간,종료시간\n";
+        allData.forEach(r => { csv += `${r.name},${r.date},${r.start},${r.end}\n`; });
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `삼영백업_${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+    }
+
+    function importCSV(input) {
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            const text = e.target.result;
+            const rows = text.split('\n').slice(1);
+            const imported = rows.filter(r => r.trim()).map(r => {
+                const cols = r.split(',');
+                return { name: cols[0], date: cols[1], start: cols[2], end: cols[3].trim() };
+            });
+            if (confirm(`${imported.length}개의 데이터를 복구하시겠습니까?`)) {
+                await dataPath.set(imported);
+                alert("복구 완료!");
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    function renderTable(data) {
         const now = new Date();
         const startDay = now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1);
-        const monday = new Date(new Date().setDate(startDay));
-        const dayNames = ['월','화','수','목','금','토','일'];
-        container.innerHTML = '';
-        for(let i=0; i<7; i++) {
-            const d = new Date(monday); d.setDate(monday.getDate() + i);
-            const ds = d.toISOString().split('T')[0];
-            const div = document.createElement('div');
-            div.className = `day-card ${ds === selectedDate ? 'selected' : ''} ${ds === new Date().toISOString().split('T')[0] ? 'today' : ''}`;
-            div.innerHTML = `<b>${dayNames[i]}(${d.getDate()})</b>`;
-            div.onclick = () => { 
-                document.querySelectorAll('.day-card').forEach(c => c.classList.remove('selected')); 
-                div.classList.add('selected'); 
-                selectedDate = ds; 
-            };
-            container.appendChild(div);
-            // 오늘 날짜로 자동 스크롤
-            if(ds === new Date().toISOString().split('T')[0]) {
-                setTimeout(() => div.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }), 100);
-            }
-        }
+        const monStr = new Date(new Date().setDate(startDay)).toISOString().split('T')[0];
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+        const todayStr = new Date().toISOString().split('T')[0];
+
+        let weekFineTotal = 0;
+        let monthSaveTotal = 0;
+
+        const summary = members.map(m => {
+            const wLogs = data.filter(d => d.name === m && d.date >= monStr && d.end);
+            const mLogs = data.filter(d => d.name === m && d.date >= monthStart && d.end);
+            const todayLog = data.find(d => d.name === m && d.date === todayStr);
+            const isWorking = todayLog && todayLog.start && !todayLog.end;
+            const dBit = [0,0,0,0,0,0,0];
+            wLogs.forEach(l => { dBit[(new Date(l.date).getDay() + 6) % 7] = 1; });
+            const cnt = wLogs.length;
+            let fine = (cnt >= 3) ? 0 : (cnt === 2 ? 1000 : (cnt === 1 ? 3000 : 5000));
+            
+            weekFineTotal += fine;
+            monthSaveTotal += (mLogs.length * 1000); 
+
+            return { name: m, cnt, fine, dBit, isWorking };
+        }).sort((a,b) => b.cnt - a.cnt);
+
+        document.getElementById('totalWeekFine').innerText = weekFineTotal.toLocaleString() + "원";
+        document.getElementById('totalMonthSave').innerText = monthSaveTotal.toLocaleString() + "원";
+
+        let html = "";
+        summary.forEach((s, i) => {
+            const badges = ['월','화','수','목','금','토','일'].map((n, idx) => {
+                let cls = "day-badge";
+                if (s.dBit[idx]) cls += " active";
+                else if (s.isWorking && idx === (new Date().getDay() + 6) % 7) cls += " ing";
+                return `<div class="${cls}" onclick="openEdit('${s.name}', ${idx})">${cls.includes('ing') ? 'ing' : n}</div>`;
+            }).join('');
+            html += `<tr class="${s.isWorking ? 'is-working' : ''}">
+                <td>${i+1}</td><td style="font-weight:bold">${s.name}</td><td>${badges}</td><td>${s.cnt}</td><td style="color:var(--danger)">${s.fine.toLocaleString()}</td>
+            </tr>`;
+        });
+        document.getElementById('statTable').innerHTML = html;
     }
 
-    /* --- 나머지 로직 (handleRecord, renderTable, History 등) 동일하게 유지 --- */
-    function updateHeaderTitle() {
-        const now = new Date();
-        const first = new Date(now.getFullYear(), now.getMonth(), 1);
-        const wk = Math.ceil((now.getDate() + first.getDay()) / 7);
-        document.getElementById('mainTitle').innerText = `🔥 삼영건강증진회 ${now.getMonth()+1}월 ${wk}주차 🔥`;
-    }
-
-    function sendKakao(name, statusType, detail) {
+    function sendKakao(name, type, time) {
         if (!Kakao.isInitialized()) return;
-        const msg = statusType === 'START' ? `${name}님이 운동을 시작했어요! 🔥` : `${name}님이 운동을 완료했어요! 💪`;
         Kakao.Share.sendDefault({
             objectType: 'feed',
             content: {
                 title: '🏋️ 삼영건강증진회',
-                description: `${msg}\n기록: ${detail}`,
+                description: `${name}님 운동 ${type === 'START' ? '시작! 🔥' : '완료! 💪'}\n시간: ${time}`,
                 imageUrl: 'https://cdn-icons-png.flaticon.com/512/3048/3048398.png',
                 link: { mobileWebUrl: location.href, webUrl: location.href }
             }
@@ -182,63 +285,50 @@
             list.push({ name, date: selectedDate, start: time, end: "" });
             await dataPath.set(list); sendKakao(name, 'START', time);
         } else {
-            if(idx === -1) return alert("시작을 먼저 누르세요.");
+            if(idx === -1) return alert("시작을 먼저!");
             list[idx].end = time; await dataPath.set(list); sendKakao(name, 'END', `${list[idx].start} ~ ${time}`);
         }
     }
 
-    function renderTable(data) {
-        const now = new Date();
-        const startDay = now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1);
-        const monStr = new Date(new Date().setDate(startDay)).toISOString().split('T')[0];
-        const todayStr = new Date().toISOString().split('T')[0];
-        const todayIdx = (new Date().getDay() + 6) % 7;
-
-        const summary = members.map(m => {
-            const wLogs = data.filter(d => d.name === m && d.date >= monStr && d.end);
-            const todayLog = data.find(d => d.name === m && d.date === todayStr);
-            const isWorking = todayLog && todayLog.start && !todayLog.end;
-            const dBit = [0,0,0,0,0,0,0];
-            wLogs.forEach(l => { dBit[(new Date(l.date).getDay() + 6) % 7] = 1; });
-            const cnt = wLogs.length;
-            let fine = (cnt >= 3) ? 0 : (cnt === 2 ? 1000 : (cnt === 1 ? 3000 : 5000));
-            return { name: m, cnt, fine, dBit, isWorking };
-        }).sort((a,b) => b.cnt - a.cnt);
-
-        let html = "";
-        summary.forEach((s, i) => {
-            const badges = ['월','화','수','목','금','토','일'].map((n, idx) => {
-                let cls = "day-badge"; let content = n;
-                if (s.dBit[idx]) cls += " active";
-                else if (s.isWorking && idx === todayIdx) { cls += " ing"; content = "ing"; }
-                return `<div class="${cls}" onclick="openEdit('${s.name}', ${idx})">${content}</div>`;
-            }).join('');
-            html += `<tr class="${s.isWorking ? 'is-working' : ''}">
-                <td>${i+1}</td><td style="font-weight:bold">${s.name}</td><td>${badges}</td><td>${s.cnt}</td><td style="color:var(--danger)">${s.fine.toLocaleString()}</td><td>${(s.cnt*1000).toLocaleString()}</td>
-            </tr>`;
-        });
-        document.getElementById('statTable').innerHTML = html;
-    }
-
     function triggerPhoto(type) {
         const name = document.getElementById('nameSelect').value;
-        if(!name) return alert("멤버 선택!");
+        if(!name) return alert("이름 선택!");
         const input = document.getElementById('photoInput');
         input.onchange = () => handleRecord(type, name);
         input.click();
     }
 
-    function toggleHistory(show) { document.getElementById('historyView').style.display = show ? 'block' : 'none'; }
-    function renderHistory(data) {
-        const container = document.getElementById('historyContent');
-        const sorted = [...data].sort((a,b) => new Date(b.date) - new Date(a.date));
-        let html = "";
-        sorted.forEach(r => {
-            html += `<div style="padding:10px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; font-size:0.85rem;">
-                <span><b>${r.name}</b> (${r.date})</span><span style="color:#888">${r.start} ~ ${r.end || 'ing'}</span>
-            </div>`;
-        });
-        container.innerHTML = html || "<p style='text-align:center; padding:20px;'>기록이 없습니다.</p>";
+    function updateHeaderTitle() {
+        const now = new Date();
+        const wk = Math.ceil((now.getDate() + new Date(now.getFullYear(), now.getMonth(), 1).getDay()) / 7);
+        document.getElementById('mainTitle').innerText = `🔥 삼영 ${now.getMonth()+1}월 ${wk}주차 🔥`;
+    }
+
+    function renderWeekCards() {
+        const container = document.getElementById('weekSelector');
+        const now = new Date();
+        const startDay = now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1);
+        const monday = new Date(new Date().setDate(startDay));
+        container.innerHTML = '';
+        for(let i=0; i<7; i++) {
+            const d = new Date(monday); d.setDate(monday.getDate() + i);
+            const ds = d.toISOString().split('T')[0];
+            const div = document.createElement('div');
+            div.className = `day-card ${ds === selectedDate ? 'selected' : ''} ${ds === new Date().toISOString().split('T')[0] ? 'today' : ''}`;
+            div.innerHTML = `<b>${['월','화','수','목','금','토','일'][i]}(${d.getDate()})</b>`;
+            div.onclick = () => { document.querySelectorAll('.day-card').forEach(c => c.classList.remove('selected')); div.classList.add('selected'); selectedDate = ds; };
+            container.appendChild(div);
+        }
+    }
+
+    function tick() {
+        const now = new Date();
+        const sun = new Date(); sun.setDate(now.getDate() + (now.getDay() === 0 ? 0 : 7 - now.getDay())); sun.setHours(24,0,0,0);
+        const diff = sun - now;
+        const h = String(Math.floor((diff/3600000)%24)).padStart(2,'0');
+        const m = String(Math.floor((diff/60000)%60)).padStart(2,'0');
+        const s = String(Math.floor((diff/1000)%60)).padStart(2,'0');
+        document.getElementById('timerDisplay').innerText = `주간 정산까지: ${Math.floor(diff/86400000)}일 ${h}:${m}:${s}`;
     }
 
     async function openEdit(name, dayIdx) {
@@ -252,7 +342,6 @@
         document.getElementById('editEnd').value = record ? record.end : "";
         document.getElementById('modal').style.display = 'flex';
     }
-
     async function saveEdit() {
         let list = [...allData];
         let idx = list.findIndex(r => r.name === currentEdit.name && r.date === currentEdit.date);
@@ -264,24 +353,10 @@
         let list = allData.filter(r => !(r.name === currentEdit.name && r.date === currentEdit.date));
         await dataPath.set(list); closeModal();
     }
+    function toggleView(id, show) { document.getElementById(id).style.display = show ? 'block' : 'none'; }
     function closeModal() { document.getElementById('modal').style.display = 'none'; }
-    async function downloadData() {
-        let csv = "\uFEFF이름,날짜,시작시간,종료시간\n";
-        allData.forEach(r => { csv += `${r.name},${r.date},${r.start},${r.end}\n`; });
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `삼영기록.csv`; link.click();
-    }
     async function resetData() { if(confirm("초기화하시겠습니까?")) await dataPath.set(null); }
 
-    function tick() {
-        const now = new Date();
-        const sun = new Date(); sun.setDate(now.getDate() + (now.getDay() === 0 ? 7 : 7 - now.getDay())); sun.setHours(24,0,0,0);
-        const diff = sun - now;
-        const h = String(Math.floor((diff/3600000)%24)).padStart(2,'0');
-        const m = String(Math.floor((diff/60000)%60)).padStart(2,'0');
-        const s = String(Math.floor((diff/1000)%60)).padStart(2,'0');
-        document.getElementById('timerDisplay').innerText = `정산까지: ${Math.floor(diff/86400000)}일 ${h}:${m}:${s}`;
-    }
     window.onload = init;
 </script>
 </body>
