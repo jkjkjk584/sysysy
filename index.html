@@ -65,6 +65,7 @@
         .report-table th { background: #fafafa; padding: 12px 5px; color: #888; border-bottom: 2px solid #eee; }
         .report-table td { padding: 12px 5px; border-bottom: 1px solid #f9f9f9; text-align: center; }
         .pay-check { width: 18px; height: 18px; cursor: pointer; }
+        .month-select { padding: 4px 8px; border-radius: 8px; border: 1px solid #ddd; font-size: 0.8rem; font-weight: bold; color: var(--primary); outline: none; }
     </style>
 </head>
 <body>
@@ -101,7 +102,7 @@
     <div class="report-section">
         <div class="report-title">💰 누적 벌금 정산 (월/년)</div>
         <table class="report-table">
-            <thead><tr><th>이름</th><th>3월 누적</th><th>2026년 합계</th></tr></thead>
+            <thead><tr><th>이름</th><th id="currentMonthTitle">3월 누적</th><th>2026년 합계</th></tr></thead>
             <tbody id="totalAccumulatedBody"></tbody>
         </table>
     </div>
@@ -148,7 +149,10 @@
     </div>
 
     <div class="report-section" style="margin-top:10px; padding:10px;">
-        <div class="report-title" style="font-size:0.85rem; margin-bottom:8px;">📅 이달의 운동 현황 (게이지)</div>
+        <div class="report-title" style="font-size:0.85rem; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+            <span>📅 이달의 운동 현황 (게이지)</span>
+            <select id="calMonthSelect" class="month-select" onchange="renderCalendar()"></select>
+        </div>
         <div class="cal-grid" id="calendarGrid"></div>
     </div>
 
@@ -179,9 +183,23 @@
     let adminSettings = {};
     let pendingAction = null;
 
+    // 벌금시스템 적용 시작일: 2026년 3월 2째주 월요일 (3월 9일)
+    const FINE_START_DATE = "2026-03-09";
+
     function init() {
         const sel = document.getElementById('nameSelect');
         members.forEach(m => { sel.innerHTML += `<option value="${m}">${m}</option>`; });
+        
+        const calSel = document.getElementById('calMonthSelect');
+        const now = new Date();
+        for(let m=1; m<=12; m++) {
+            const opt = document.createElement('option');
+            opt.value = m;
+            opt.text = m + "월";
+            if(m === now.getMonth()+1) opt.selected = true;
+            calSel.appendChild(opt);
+        }
+
         renderWeekCards();
         updateHeaderTitle();
         
@@ -207,18 +225,21 @@
 
     function renderCalendar() {
         const grid = document.getElementById('calendarGrid');
+        const calMonth = parseInt(document.getElementById('calMonthSelect').value);
         const now = new Date();
-        const firstDayDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        const year = now.getFullYear();
+        
+        const firstDayDate = new Date(year, calMonth - 1, 1);
         const emptyCells = (firstDayDate.getDay() + 6) % 7; 
-        const lastDate = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+        const lastDate = new Date(year, calMonth, 0).getDate();
         
         let html = ['월','화','수','목','금','토','일'].map(d => `<div class="cal-day-head" style="${d==='일'?'color:red':''}">${d}</div>`).join('');
         for(let i=0; i<emptyCells; i++) html += `<div class="cal-cell"></div>`;
         
         for(let d=1; d<=lastDate; d++) {
-            const dateObj = new Date(now.getFullYear(), now.getMonth(), d);
+            const dateObj = new Date(year, calMonth - 1, d);
             const isSunday = dateObj.getDay() === 0;
-            const ds = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+            const ds = `${year}-${String(calMonth).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
             const currentMon = getMonday(ds);
             
             let gauges = "";
@@ -245,7 +266,6 @@
         grid.innerHTML = html;
     }
 
-    // 2. 관리자 페이지 멤버 활성화 관리 '중지' -> '휴식'으로 변경
     function renderAdminList() {
         const list = document.getElementById('adminMemberList');
         list.innerHTML = members.map(m => {
@@ -260,6 +280,11 @@
 
     async function toggleActivity(name, currentStatus) {
         await adminPath.child(name).set({ disabled: !currentStatus });
+    }
+
+    function calculateFineAmount(cnt, isOff) {
+        if (isOff) return 0;
+        return cnt >= 3 ? 0 : (cnt === 2 ? 1000 : (cnt === 1 ? 3000 : 5000));
     }
 
     function renderTable(data) {
@@ -281,7 +306,7 @@
                 }
             });
             const cnt = dBit.filter(b => b === 1).length;
-            const fine = isOff ? 0 : (cnt >= 3 ? 0 : (cnt === 2 ? 1000 : (cnt === 1 ? 3000 : 5000)));
+            const fine = calculateFineAmount(cnt, isOff);
             weekFineTotal += fine;
             monthSaveTotal += (data.filter(d => d.name === m && d.date >= "2026-03-01" && d.end).length * 1000);
             return { name: m, cnt, fine, dBit, globalIng, isOff };
@@ -308,7 +333,6 @@
         document.getElementById('statTable').innerHTML = html;
     }
 
-    // 3. 벌금 납입 체크 후 '저장하기' 버튼 로직
     async function savePayments() {
         await payPath.set(paymentData);
         alert("납부 상태가 저장되었습니다.");
@@ -335,7 +359,8 @@
             const logs = allData.filter(d => d.name === m && d.date >= lastMonStr && d.date <= lastSunStr && d.end);
             const dates = new Set(logs.map(l => l.date));
             const cnt = dates.size;
-            const fine = isOff ? 0 : (cnt >= 3 ? 0 : (cnt === 2 ? 1000 : (cnt === 1 ? 3000 : 5000)));
+            
+            const fine = (lastMonStr < FINE_START_DATE) ? 0 : calculateFineAmount(cnt, isOff);
             
             const isPaid = paymentData[`${m}_${weekKey}`] || false;
             if(!isPaid) totalUnpaid += fine;
@@ -352,13 +377,54 @@
         document.getElementById('unpaidTotal').innerText = `미납액: ${totalUnpaid.toLocaleString()}원`;
     }
 
+    // 수정된 로직: 이번 주 진행 중인 기록을 제외하고 지난주까지의 벌금만 합산
     function renderAccumulatedReport() {
-        let sampleHtml = members.map(m => {
-            const mCount = allData.filter(d=>d.name===m && d.date.includes('-03-') && d.end).length;
-            const yCount = allData.filter(d=>d.name===m && d.end).length;
-            return `<tr><td style="font-weight:bold">${m}</td><td>${(mCount * 1000).toLocaleString()}원</td><td>${(yCount * 1000).toLocaleString()}원</td></tr>`;
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth() + 1;
+        document.getElementById('currentMonthTitle').innerText = `${month}월 누적`;
+
+        // 이번 주 월요일 날짜 구하기 (기준점)
+        const todayMon = new Date(getMonday(now));
+
+        let html = members.map(m => {
+            const getAccumulatedFine = (startDate, limitDate) => {
+                let totalFine = 0;
+                let current = new Date(startDate);
+                
+                // 적용 시작일보다 이전이면 적용 시작일부터 계산
+                if (current < new Date(FINE_START_DATE)) {
+                    current = new Date(FINE_START_DATE);
+                }
+                
+                while (current < limitDate) {
+                    const monStr = getMonday(current);
+                    const sun = new Date(monStr); 
+                    sun.setDate(sun.getDate() + 6);
+                    const sunStr = sun.toISOString().split('T')[0];
+                    
+                    // 해당 주차의 일요일이 이번 주 월요일보다 이전일 때만 확정된 것으로 보고 합산
+                    if (new Date(sunStr) < limitDate) {
+                        const logs = allData.filter(d => d.name === m && d.date >= monStr && d.date <= sunStr && d.end);
+                        const cnt = new Set(logs.map(l => l.date)).size;
+                        totalFine += calculateFineAmount(cnt, false);
+                    }
+                    
+                    current.setDate(current.getDate() + 7);
+                }
+                return totalFine;
+            };
+
+            const mFine = getAccumulatedFine(`${year}-${String(month).padStart(2,'0')}-01`, todayMon);
+            const yFine = getAccumulatedFine(`${year}-01-01`, todayMon);
+
+            return `<tr>
+                <td style="font-weight:bold">${m}</td>
+                <td style="color:var(--danger)">${mFine.toLocaleString()}원</td>
+                <td style="color:var(--danger)">${yFine.toLocaleString()}원</td>
+            </tr>`;
         }).join('');
-        document.getElementById('totalAccumulatedBody').innerHTML = sampleHtml;
+        document.getElementById('totalAccumulatedBody').innerHTML = html;
     }
 
     function editLog(name, dayIdx) {
@@ -451,7 +517,6 @@
     function toggleView(id, show) { document.getElementById(id).style.display = show ? 'block' : 'none'; }
     async function resetData() { if(confirm("전체 데이터(납부, 활동중지 포함)를 초기화하시겠습니까?")) { await dataPath.set(null); await payPath.set(null); await adminPath.set(null); } }
     
-    // 3. 백업 시 납부 정보도 CSV 하단에 포함
     function downloadCSV() {
         let csv = "\uFEFF이름,날짜,시작시간,종료시간\n";
         allData.forEach(r => { csv += `${r.name},${r.date},${r.start},${r.end}\n`; });
