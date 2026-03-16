@@ -6,7 +6,6 @@
     <title>삼영건강증진회 Master</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.0/kakao.min.js"></script>
     <style>
         :root { 
             --primary: #5da3d9; --danger: #e66755; 
@@ -24,24 +23,23 @@
         .day-card.selected { background: var(--primary); border-color: var(--primary); color: white; }
         .day-card.today { border: 1.5px solid var(--success); }
         
-        /* 입력 그룹 레이아웃 수정 */
-        .input-group { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
-        .row-full { grid-column: span 2; display: flex; gap: 6px; }
-        select { flex: 1.2; padding: 10px; border-radius: 12px; border: 1px solid #ddd; font-weight: bold; font-size: 0.85rem; }
-        .btn { padding: 10px; border: none; border-radius: 12px; color: white; font-weight: bold; cursor: pointer; font-size: 0.8rem; flex: 1; }
-        .btn-manual { background: #6c757d; } /* 운동기록추가 버튼 색상 */
+        .input-group { display: flex; gap: 6px; margin-bottom: 12px; }
+        select { flex: 1.5; padding: 10px; border-radius: 12px; border: 1px solid #ddd; font-weight: bold; font-size: 0.9rem; }
+        .btn { flex: 1; border: none; border-radius: 12px; color: white; font-weight: bold; cursor: pointer; font-size: 0.85rem; }
         .btn-start { background: var(--primary); }
         .btn-end { background: var(--danger); }
 
         .table-wrapper { overflow-x: auto; margin-bottom: 12px; border-radius: 16px; border: 1px solid #f0f0f0; }
+        /* 수정된 부분: 테이블 간격 및 너비 최적화 */
         table { width: 100%; border-collapse: collapse; font-size: 0.72rem; min-width: auto; table-layout: fixed; }
         th { padding: 10px 2px; background: #fafafa; color: #888; text-align: center; }
         td { padding: 10px 2px; border-bottom: 1px solid #f9f9f9; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        th:nth-child(1), td:nth-child(1) { width: 10%; }
-        th:nth-child(2), td:nth-child(2) { width: 18%; }
-        th:nth-child(3), td:nth-child(3) { width: 48%; }
-        th:nth-child(4), td:nth-child(4) { width: 10%; }
-        th:nth-child(5), td:nth-child(5) { width: 14%; }
+        /* 컬럼별 너비 지정 */
+        th:nth-child(1), td:nth-child(1) { width: 10%; } /* 순위 */
+        th:nth-child(2), td:nth-child(2) { width: 18%; } /* 이름 */
+        th:nth-child(3), td:nth-child(3) { width: 48%; } /* 주간 현황 */
+        th:nth-child(4), td:nth-child(4) { width: 10%; } /* 회 */
+        th:nth-child(5), td:nth-child(5) { width: 14%; } /* 벌금 */
         
         tr.is-working { background-color: var(--working) !important; }
         tr.is-disabled { opacity: 0.5; background-color: #f5f5f5; }
@@ -74,6 +72,8 @@
         .report-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; table-layout: auto; }
         .report-table th { background: #fafafa; padding: 12px 5px; color: #888; border-bottom: 2px solid #eee; }
         .report-table td { padding: 12px 5px; border-bottom: 1px solid #f9f9f9; text-align: center; }
+        .pay-check { width: 18px; height: 18px; cursor: pointer; }
+        .month-select { padding: 4px 8px; border-radius: 8px; border: 1px solid #ddd; font-size: 0.8rem; font-weight: bold; color: var(--primary); outline: none; }
     </style>
 </head>
 <body>
@@ -92,18 +92,61 @@
     </div>
 </div>
 
+<div id="historyView" class="full-layer">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <h2 style="margin:0; font-size:1.2rem; color:var(--text)">📊 삼영 통합 리포트</h2>
+        <button onclick="toggleView('historyView', false)" style="border:none; background:#eee; padding:10px 20px; border-radius:12px; font-weight:bold;">닫기</button>
+    </div>
+    
+    <div class="report-section">
+        <div class="report-title">📉 지난주 벌금 납부 관리 <span id="unpaidTotal" style="float:right; color:var(--danger); font-size:0.8rem;"></span></div>
+        <table class="report-table">
+            <thead><tr><th>이름</th><th>횟수</th><th>벌금</th><th>납부</th></tr></thead>
+            <tbody id="lastWeekReportBody"></tbody>
+        </table>
+        <button class="btn btn-start" style="width:100%; margin-top:15px; padding:12px;" onclick="savePayments()">납부 상태 저장하기</button>
+    </div>
+
+    <div class="report-section">
+        <div class="report-title">💰 누적 벌금 정산 (월/년)</div>
+        <table class="report-table">
+            <thead><tr><th>이름</th><th id="currentMonthTitle">3월 누적</th><th>2026년 합계</th></tr></thead>
+            <tbody id="totalAccumulatedBody"></tbody>
+        </table>
+    </div>
+    <div style="height:50px;"></div>
+</div>
+
+<div id="adminView" class="full-layer">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <h2 style="margin:0; font-size:1.2rem; color:var(--danger)">⚙️ 관리자 메뉴</h2>
+        <button onclick="toggleView('adminView', false)" style="border:none; background:#eee; padding:10px 20px; border-radius:12px; font-weight:bold;">닫기</button>
+    </div>
+
+    <div class="report-section">
+        <div class="report-title">👥 멤버 활동 상태 설정</div>
+        <div id="adminMemberList" style="font-size:0.9rem;"></div>
+    </div>
+
+    <div class="report-section">
+        <div class="report-title">💾 데이터 관리</div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <button class="btn" style="background:#666;" onclick="downloadCSV()">백업(CSV)</button>
+            <button class="btn" style="background:#888;" onclick="document.getElementById('csvUpload').click()">복구(CSV)</button>
+            <button class="btn btn-end" style="grid-column: span 2;" onclick="resetData()">전체 초기화</button>
+        </div>
+    </div>
+</div>
+
 <div class="container">
     <div class="header-banner"><span id="mainTitle">로드 중...</span></div>
     <div class="timer-box" id="timerDisplay">D-Day 계산 중...</div>
     <div class="week-grid" id="weekSelector"></div>
 
     <div class="input-group">
-        <div class="row-full">
-            <select id="nameSelect"><option value="">이름 선택</option></select>
-            <button class="btn btn-manual" onclick="manualAddRecord()">운동기록추가</button>
-        </div>
-        <button class="btn btn-start" onclick="openActionModal('START')">카톡으로 운동시작</button>
-        <button class="btn btn-end" onclick="openActionModal('END')">카톡으로 운동종료</button>
+        <select id="nameSelect"><option value="">이름 선택</option></select>
+        <button class="btn btn-start" onclick="openActionModal('START')">시작</button>
+        <button class="btn btn-end" onclick="openActionModal('END')">종료</button>
     </div>
 
     <div class="table-wrapper">
@@ -130,15 +173,10 @@
         <button class="btn-mini" onclick="openReport()">📊 리포트 보기</button>
         <button class="btn-mini" onclick="toggleView('adminView', true)">⚙️ 관리자 메뉴</button>
     </div>
+    <input type="file" id="csvUpload" accept=".csv" style="display:none;" onchange="importCSV(this)">
 </div>
 
-<div id="historyView" class="full-layer">... (원본 코드와 동일) ...</div>
-<div id="adminView" class="full-layer">... (원본 코드와 동일) ...</div>
-
 <script>
-    // 카카오 초기화
-    if (!Kakao.isInitialized()) Kakao.init('586678c7f1fd7c2d42c3f3b922499b65');
-
     const config = { databaseURL: "https://samyoung-61ed1-default-rtdb.asia-southeast1.firebasedatabase.app" };
     firebase.initializeApp(config);
     const db = firebase.database();
@@ -153,77 +191,380 @@
     let adminSettings = {};
     let pendingAction = null;
 
+    // 벌금시스템 적용 시작일: 2026년 3월 2째주 월요일 (3월 9일)
     const FINE_START_DATE = "2026-03-09";
 
-    // 카카오톡 이미지 공유 및 시작/종료 처리
-    function handleKakaoShare(name, type) {
-        const fileInput = document.createElement('input');
-        fileInput.type = 'file';
-        fileInput.accept = 'image/*';
-        fileInput.onchange = (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                Kakao.Share.uploadImage({ file: [file] }).then(res => {
-                    const statusMsg = type === 'START' ? '운동을 시작했어요! 🔥' : '운동을 완료했어요! 💪';
-                    Kakao.Share.sendDefault({
-                        objectType: 'feed',
-                        content: {
-                            title: '삼영건강증진회 인증',
-                            description: `${name}님이 ${statusMsg}`,
-                            imageUrl: res.infos.original.url,
-                            link: { mobileWebUrl: window.location.href, webUrl: window.location.href }
-                        }
-                    });
-                    // 사진 공유 성공 후 기록 저장 실행
-                    processSave(type, name);
-                }).catch(err => {
-                    alert("이미지 업로드 실패: " + JSON.stringify(err));
-                });
-            }
-        };
-        fileInput.click();
+    function init() {
+        const sel = document.getElementById('nameSelect');
+        members.forEach(m => { sel.innerHTML += `<option value="${m}">${m}</option>`; });
+        
+        const calSel = document.getElementById('calMonthSelect');
+        const now = new Date();
+        for(let m=1; m<=12; m++) {
+            const opt = document.createElement('option');
+            opt.value = m;
+            opt.text = m + "월";
+            if(m === now.getMonth()+1) opt.selected = true;
+            calSel.appendChild(opt);
+        }
+
+        renderWeekCards();
+        updateHeaderTitle();
+        
+        dataPath.on('value', snap => { allData = snap.val() || []; renderTable(allData); renderCalendar(); });
+        payPath.on('value', snap => { paymentData = snap.val() || {}; if(document.getElementById('historyView').style.display === 'block') renderLastWeekReport(); });
+        adminPath.on('value', snap => { adminSettings = snap.val() || {}; renderAdminList(); renderTable(allData); });
+
+        setInterval(tick, 1000);
     }
 
-    // 메뉴얼 운동기록 추가 기능
-    async function manualAddRecord() {
-        const name = document.getElementById('nameSelect').value;
-        if(!name) return alert("이름을 선택하세요!");
-        if(confirm(`[${name}] ${selectedDate} 날짜에 운동 완료 기록을 수동으로 추가할까요?`)) {
-            let list = [...allData];
-            list.push({ name, date: selectedDate, start: "00:00:00", end: "00:50:00" });
-            await dataPath.set(list);
-            alert("기록이 추가되었습니다.");
+    function openReport() {
+        renderLastWeekReport();
+        renderAccumulatedReport();
+        toggleView('historyView', true);
+    }
+
+    function getMonday(d) {
+        let date = new Date(d);
+        let day = date.getDay();
+        let diff = date.getDate() - day + (day === 0 ? -6 : 1);
+        return new Date(date.setDate(diff)).toISOString().split('T')[0];
+    }
+
+    function renderCalendar() {
+        const grid = document.getElementById('calendarGrid');
+        const calMonth = parseInt(document.getElementById('calMonthSelect').value);
+        const now = new Date();
+        const year = now.getFullYear();
+        
+        const firstDayDate = new Date(year, calMonth - 1, 1);
+        const emptyCells = (firstDayDate.getDay() + 6) % 7; 
+        const lastDate = new Date(year, calMonth, 0).getDate();
+        
+        let html = ['월','화','수','목','금','토','일'].map(d => `<div class="cal-day-head" style="${d==='일'?'color:red':''}">${d}</div>`).join('');
+        for(let i=0; i<emptyCells; i++) html += `<div class="cal-cell"></div>`;
+        
+        for(let d=1; d<=lastDate; d++) {
+            const dateObj = new Date(year, calMonth - 1, d);
+            const isSunday = dateObj.getDay() === 0;
+            const ds = `${year}-${String(calMonth).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+            const currentMon = getMonday(ds);
+            
+            let gauges = "";
+            members.forEach(m => {
+                const dayLog = allData.find(r => r.name === m && r.date === ds && r.end);
+                if(dayLog) {
+                    const weekLogsCount = new Set(allData.filter(r => r.name === m && r.date >= currentMon && r.date <= ds && r.end).map(r => r.date)).size;
+                    gauges += `<div class="cal-member-row">
+                        <span class="cal-member-name">${m}</span>
+                        <div class="cal-gauge-box">
+                            <div class="cal-gauge-dot ${weekLogsCount >= 1 ? 'filled' : ''}"></div>
+                            <div class="cal-gauge-dot ${weekLogsCount >= 2 ? 'filled' : ''}"></div>
+                            <div class="cal-gauge-dot ${weekLogsCount >= 3 ? 'filled' : ''}"></div>
+                        </div>
+                    </div>`;
+                }
+            });
+            
+            html += `<div class="cal-cell">
+                <span style="font-weight:bold; color:${isSunday ? 'red' : '#666'};">${d}</span>
+                ${gauges}
+            </div>`;
+        }
+        grid.innerHTML = html;
+    }
+
+    function renderAdminList() {
+        const list = document.getElementById('adminMemberList');
+        list.innerHTML = members.map(m => {
+            const isOff = adminSettings[m]?.disabled || false;
+            return `<div style="display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid #eee;">
+                <span>${m} <b>${isOff ? '(휴식 중)' : '(활동 중)'}</b></span>
+                <button class="btn-mini" style="background:${isOff ? 'var(--success)' : 'var(--danger)'}; color:white; border:none;" 
+                onclick="toggleActivity('${m}', ${isOff})">${isOff ? '활동 복귀' : '휴식 설정'}</button>
+            </div>`;
+        }).join('');
+    }
+
+    async function toggleActivity(name, currentStatus) {
+        await adminPath.child(name).set({ disabled: !currentStatus });
+    }
+
+    function calculateFineAmount(cnt, isOff) {
+        if (isOff) return 0;
+        return cnt >= 3 ? 0 : (cnt === 2 ? 1000 : (cnt === 1 ? 3000 : 5000));
+    }
+
+    function renderTable(data) {
+        const now = new Date();
+        const startDay = new Date(now); 
+        startDay.setDate(now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1));
+        const monStr = startDay.toISOString().split('T')[0];
+        let weekFineTotal = 0; let monthSaveTotal = 0;
+
+        const summary = members.map(m => {
+            const isOff = adminSettings[m]?.disabled || false; 
+            const wLogs = data.filter(d => d.name === m && d.date >= monStr);
+            const globalIng = data.find(d => d.name === m && d.end === "");
+            const dBit = [0,0,0,0,0,0,0];
+            wLogs.forEach(l => {
+                if(l.end) {
+                    const logDate = new Date(l.date.replace(/-/g, '/'));
+                    dBit[(logDate.getDay() + 6) % 7] = 1;
+                }
+            });
+            const cnt = dBit.filter(b => b === 1).length;
+            const fine = calculateFineAmount(cnt, isOff);
+            weekFineTotal += fine;
+            monthSaveTotal += (data.filter(d => d.name === m && d.date >= "2026-03-01" && d.end).length * 1000);
+            return { name: m, cnt, fine, dBit, globalIng, isOff };
+        }).sort((a,b) => b.cnt - a.cnt);
+
+        document.getElementById('totalWeekFine').innerText = weekFineTotal.toLocaleString() + "원";
+        document.getElementById('totalMonthSave').innerText = monthSaveTotal.toLocaleString() + "원";
+        
+        let html = "";
+        summary.forEach((s, i) => {
+            const badges = ['월','화','수','목','금','토','일'].map((n, idx) => {
+                let cls = s.dBit[idx] ? "day-badge active" : "day-badge";
+                if (s.globalIng && (new Date(s.globalIng.date.replace(/-/g, '/')).getDay() + 6) % 7 === idx) cls = "day-badge ing";
+                return `<div class="${cls}" onclick="editLog('${s.name}', ${idx})">${cls.includes('ing') ? 'ing' : n}</div>`;
+            }).join('');
+            html += `<tr class="${s.globalIng ? 'is-working' : ''} ${s.isOff ? 'is-disabled' : ''}">
+                <td>${i+1}</td>
+                <td style="font-weight:bold">${s.name}${s.isOff ? '<br><small>(휴식)</small>' : ''}</td>
+                <td>${badges}</td>
+                <td>${s.cnt}</td>
+                <td style="color:var(--danger)">${s.fine.toLocaleString()}</td>
+            </tr>`;
+        });
+        document.getElementById('statTable').innerHTML = html;
+    }
+
+    async function savePayments() {
+        await payPath.set(paymentData);
+        alert("납부 상태가 저장되었습니다.");
+    }
+
+    function togglePaymentLocal(name, weekKey) {
+        const key = `${name}_${weekKey}`;
+        paymentData[key] = !paymentData[key];
+    }
+
+    function renderLastWeekReport() {
+        const now = new Date();
+        const lastMon = new Date(now);
+        lastMon.setDate(now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1) - 7);
+        const lastMonStr = lastMon.toISOString().split('T')[0];
+        const lastSunStr = new Date(lastMon.getTime() + 6*86400000).toISOString().split('T')[0];
+        const weekKey = `W_${lastMonStr}`;
+
+        let html = "";
+        let totalUnpaid = 0;
+
+        members.forEach(m => {
+            const isOff = adminSettings[m]?.disabled || false;
+            const logs = allData.filter(d => d.name === m && d.date >= lastMonStr && d.date <= lastSunStr && d.end);
+            const dates = new Set(logs.map(l => l.date));
+            const cnt = dates.size;
+            
+            const fine = (lastMonStr < FINE_START_DATE) ? 0 : calculateFineAmount(cnt, isOff);
+            
+            const isPaid = paymentData[`${m}_${weekKey}`] || false;
+            if(!isPaid) totalUnpaid += fine;
+
+            html += `<tr>
+                <td>${m}</td>
+                <td>${cnt}회</td>
+                <td style="color:${fine>0?'var(--danger)':'#ccc'}; font-weight:bold;">${fine.toLocaleString()}원</td>
+                <td><input type="checkbox" class="pay-check" ${isPaid ? 'checked' : ''} ${fine===0 ? 'disabled' : ''} onchange="togglePaymentLocal('${m}', '${weekKey}')"></td>
+            </tr>`;
+        });
+        
+        document.getElementById('lastWeekReportBody').innerHTML = html;
+        document.getElementById('unpaidTotal').innerText = `미납액: ${totalUnpaid.toLocaleString()}원`;
+    }
+
+    function renderAccumulatedReport() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth() + 1;
+        document.getElementById('currentMonthTitle').innerText = `${month}월 누적`;
+
+        const todayMon = new Date(getMonday(now));
+
+        let html = members.map(m => {
+            const getAccumulatedFine = (startDate, limitDate) => {
+                let totalFine = 0;
+                let current = new Date(startDate);
+                
+                if (current < new Date(FINE_START_DATE)) {
+                    current = new Date(FINE_START_DATE);
+                }
+                
+                while (current < limitDate) {
+                    const monStr = getMonday(current);
+                    const sun = new Date(monStr); 
+                    sun.setDate(sun.getDate() + 6);
+                    const sunStr = sun.toISOString().split('T')[0];
+                    
+                    if (new Date(sunStr) < limitDate) {
+                        const logs = allData.filter(d => d.name === m && d.date >= monStr && d.date <= sunStr && d.end);
+                        const cnt = new Set(logs.map(l => l.date)).size;
+                        totalFine += calculateFineAmount(cnt, false);
+                    }
+                    
+                    current.setDate(current.getDate() + 7);
+                }
+                return totalFine;
+            };
+
+            const mFine = getAccumulatedFine(`${year}-${String(month).padStart(2,'0')}-01`, todayMon);
+            const yFine = getAccumulatedFine(`${year}-01-01`, todayMon);
+
+            return `<tr>
+                <td style="font-weight:bold">${m}</td>
+                <td style="color:var(--danger)">${mFine.toLocaleString()}원</td>
+                <td style="color:var(--danger)">${yFine.toLocaleString()}원</td>
+            </tr>`;
+        }).join('');
+        document.getElementById('totalAccumulatedBody').innerHTML = html;
+    }
+
+    function editLog(name, dayIdx) {
+        const now = new Date();
+        const startDay = new Date(now); 
+        startDay.setDate(now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1));
+        const targetDate = new Date(startDay);
+        targetDate.setDate(startDay.getDate() + dayIdx);
+        const dateStr = targetDate.toISOString().split('T')[0];
+        const record = allData.find(r => r.name === name && r.date === dateStr);
+        if(!record) return;
+        if(confirm(`[${name}] ${dateStr} 기록을 삭제할까요?`)) {
+            const newList = allData.filter(r => !(r.name === name && r.date === dateStr));
+            dataPath.set(newList);
         }
     }
 
-    // 기존 시작/종료 로직을 카카오 인증 후 호출되도록 분리
-    async function processSave(type, name) {
+    function openActionModal(type) {
+        const name = document.getElementById('nameSelect').value;
+        if(!name) return alert("이름을 선택하세요!");
+        const globalIng = allData.find(r => r.name === name && r.end === "");
+        const todayIdx = allData.findIndex(r => r.name === name && r.date === selectedDate && r.end !== "");
+        pendingAction = { type, name, globalIng, todayIdx };
+        const confirmArea = document.getElementById('shortTimeConfirm');
+        const confirmCheck = document.getElementById('confirmCheck');
+        confirmArea.style.display = 'none'; confirmCheck.checked = false;
+
+        if(type === 'START') {
+            if(globalIng) return alert(`종료되지 않은 기록이 있습니다.`);
+            if(todayIdx > -1) return alert("이미 완료된 날짜입니다.");
+            document.getElementById('actionTitle').innerText = "기록 시작 🔥";
+            document.getElementById('actionMsg').innerText = "운동을 시작하시겠습니까?";
+        } else {
+            if(!globalIng) return alert("진행 중인 운동이 없습니다.");
+            const startParts = globalIng.start.split(':');
+            const startTime = new Date(globalIng.date.replace(/-/g, '/'));
+            startTime.setHours(parseInt(startParts[0]), parseInt(startParts[1]), parseInt(startParts[2] || 0));
+            const diff = Math.floor((new Date() - startTime) / 60000);
+            document.getElementById('actionTitle').innerText = "기록 종료 💪";
+            if(diff < 50) {
+                document.getElementById('actionMsg').innerHTML = `<b style='color:var(--danger)'>현재 ${diff < 0 ? 0 : diff}분 진행됨.</b><br>50분 미달입니다. 종료하시겠습니까?`;
+                confirmArea.style.display = 'block';
+            } else { document.getElementById('actionMsg').innerText = `${diff}분 완료! 저장합니다.`; confirmCheck.checked = true; }
+        }
+        document.getElementById('actionModal').style.display = 'flex';
+    }
+
+    document.getElementById('actionConfirmBtn').onclick = async () => {
+        const { type, name } = pendingAction;
+        if(type === 'END' && document.getElementById('shortTimeConfirm').style.display === 'block' && !document.getElementById('confirmCheck').checked) return alert("확인 체크박스에 체크해주세요.");
         const now = new Date();
         const time = now.getHours().toString().padStart(2,'0') + ":" + now.getMinutes().toString().padStart(2,'0') + ":" + now.getSeconds().toString().padStart(2,'0');
         let list = [...allData];
-        if(type === 'START') {
-            list.push({ name, date: selectedDate, start: time, end: "" });
-        } else {
-            const idx = list.findIndex(r => r.name === name && r.end === "");
-            if(idx > -1) list[idx].end = time;
-        }
+        if(type === 'START') list.push({ name, date: selectedDate, start: time, end: "" });
+        else { const idx = list.findIndex(r => r.name === name && r.end === ""); if(idx > -1) list[idx].end = time; }
         await dataPath.set(list);
         closeActionModal();
-    }
-
-    // 모달 내 확인 버튼 클릭 시 카카오 공유 호출
-    document.getElementById('actionConfirmBtn').onclick = () => {
-        const { type, name } = pendingAction;
-        if(type === 'END' && document.getElementById('shortTimeConfirm').style.display === 'block' && !document.getElementById('confirmCheck').checked) return alert("확인 체크박스에 체크해주세요.");
-        
-        handleKakaoShare(name, type);
     };
 
-    // --- 이하 원본 코드의 초기화 및 렌더링 로직(init, renderTable 등) 유지 ---
-    function init() { /* 원본과 동일 */ }
-    function renderTable(data) { /* 원본과 동일 */ }
-    // ... (나머지 원본 함수들 모두 포함) ...
+    function renderWeekCards() {
+        const container = document.getElementById('weekSelector');
+        const startDay = new Date(); startDay.setDate(new Date().getDate() - (new Date().getDay() === 0 ? 6 : new Date().getDay() - 1));
+        container.innerHTML = '';
+        for(let i=0; i<7; i++) {
+            const d = new Date(startDay); d.setDate(startDay.getDate() + i);
+            const ds = d.toISOString().split('T')[0];
+            const div = document.createElement('div');
+            div.className = `day-card ${ds === selectedDate ? 'selected' : ''} ${ds === new Date().toISOString().split('T')[0] ? 'today' : ''}`;
+            div.innerHTML = `<b>${['월','화','수','목','금','토','일'][i]}</b><span>${d.getDate()}</span>`;
+            div.onclick = () => { selectedDate = ds; renderWeekCards(); };
+            container.appendChild(div);
+        }
+    }
 
+    function tick() {
+        const now = new Date();
+        const sun = new Date(); sun.setDate(now.getDate() + (now.getDay() === 0 ? 0 : 7 - now.getDay())); sun.setHours(24,0,0,0);
+        const diff = sun - now;
+        const h = String(Math.floor((diff/3600000)%24)).padStart(2,'0'), m = String(Math.floor((diff/60000)%60)).padStart(2,'0'), s = String(Math.floor((diff/1000)%60)).padStart(2,'0');
+        document.getElementById('timerDisplay').innerText = `정산까지: ${Math.floor(diff/86400000)}일 ${h}:${m}:${s}`;
+    }
+
+    function updateHeaderTitle() {
+        const now = new Date();
+        const wk = Math.ceil((now.getDate() + new Date(now.getFullYear(), now.getMonth(), 1).getDay()) / 7);
+        document.getElementById('mainTitle').innerText = `🔥 삼영건강증진회 ${now.getMonth()+1}월 ${wk}주차 🔥`;
+    }
+
+    function closeActionModal() { document.getElementById('actionModal').style.display = 'none'; }
+    function toggleView(id, show) { document.getElementById(id).style.display = show ? 'block' : 'none'; }
+    async function resetData() { if(confirm("전체 데이터(납부, 활동중지 포함)를 초기화하시겠습니까?")) { await dataPath.set(null); await payPath.set(null); await adminPath.set(null); } }
+    
+    function downloadCSV() {
+        let csv = "\uFEFF이름,날짜,시작시간,종료시간\n";
+        allData.forEach(r => { csv += `${r.name},${r.date},${r.start},${r.end}\n`; });
+        
+        csv += "\n[납부 정보]\n키,납부여부\n";
+        Object.keys(paymentData).forEach(k => {
+            csv += `${k},${paymentData[k]}\n`;
+        });
+
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+        a.download = `삼영백업_${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+    }
+    
+    function importCSV(input) {
+        const file = input.files[0]; if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            const content = e.target.result;
+            const sections = content.split('\n[납부 정보]\n');
+            
+            const rows = sections[0].split('\n').slice(1);
+            const importedData = rows.filter(r => r.trim()).map(r => {
+                const cols = r.split(',');
+                return { name: cols[0], date: cols[1], start: cols[2], end: cols[3] ? cols[3].trim() : "" };
+            });
+
+            if (sections[1]) {
+                const payRows = sections[1].split('\n').slice(2);
+                payRows.forEach(r => {
+                    if(!r.trim()) return;
+                    const cols = r.split(',');
+                    paymentData[cols[0]] = (cols[1].trim() === 'true');
+                });
+            }
+
+            if (confirm(`${importedData.length}개 데이터를 복구할까요?`)) {
+                await dataPath.set(importedData);
+                await payPath.set(paymentData);
+            }
+        };
+        reader.readAsText(file);
+    }
     window.onload = init;
 </script>
 </body>
