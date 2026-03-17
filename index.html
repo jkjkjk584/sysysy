@@ -16,6 +16,10 @@
         .container { max-width: 500px; margin: 0 auto; background: white; padding: 15px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
         .header-banner { background: linear-gradient(135deg, #5da3d9, #5cc97e); padding: 15px; border-radius: 18px; color: white; text-align: center; margin-bottom: 10px; font-weight: bold; font-size: 1rem; }
         .timer-box { border: 1px dashed var(--danger); background: #fff9f9; padding: 6px; border-radius: 12px; text-align: center; color: var(--danger); font-weight: bold; font-size: 0.75rem; margin-bottom: 12px; }
+        
+        /* [수정] 요일선택바와 입력그룹을 하나의 박스로 구성 */
+        .control-box { background: #fdfdfd; border: 1px solid #eee; border-radius: 18px; padding: 12px; margin-bottom: 20px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
+        
         .week-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 15px; }
         .day-card { background: #f8f9fa; border: 1px solid #eee; border-radius: 10px; padding: 8px 0; text-align: center; cursor: pointer; }
         .day-card b { font-size: 0.7rem; display: block; }
@@ -23,11 +27,17 @@
         .day-card.selected { background: var(--primary); border-color: var(--primary); color: white; }
         .day-card.today { border: 1.5px solid var(--success); }
         
-        .input-group { display: flex; gap: 6px; margin-bottom: 12px; }
-        select { flex: 1.5; padding: 10px; border-radius: 12px; border: 1px solid #ddd; font-weight: bold; font-size: 0.9rem; }
-        .btn { flex: 1; border: none; border-radius: 12px; color: white; font-weight: bold; cursor: pointer; font-size: 0.85rem; }
+        /* [수정] 입력 그룹 레이아웃: 이름 선택칸 좁힘 및 버튼 추가 */
+        .input-group { display: flex; gap: 4px; margin-bottom: 0; }
+        select { flex: 0.8; padding: 10px; border-radius: 12px; border: 1px solid #ddd; font-weight: bold; font-size: 0.85rem; }
+        .btn { flex: 1; border: none; border-radius: 12px; color: white; font-weight: bold; cursor: pointer; font-size: 0.75rem; white-space: nowrap; }
+        .btn-add { background: #6c757d; } /* 운동기록추가 버튼 */
         .btn-start { background: var(--primary); }
         .btn-end { background: var(--danger); }
+
+        /* [수정] 현황테이블 타이틀 스타일 */
+        .section-title { font-size: 0.9rem; font-weight: bold; margin: 0 0 10px 5px; color: #555; display: flex; align-items: center; }
+        .section-title::before { content: ''; width: 4px; height: 14px; background: var(--success); margin-right: 8px; border-radius: 2px; }
 
         .table-wrapper { overflow-x: auto; margin-bottom: 12px; border-radius: 16px; border: 1px solid #f0f0f0; }
         table { width: 100%; border-collapse: collapse; font-size: 0.72rem; min-width: auto; table-layout: fixed; }
@@ -139,14 +149,18 @@
 <div class="container">
     <div class="header-banner"><span id="mainTitle">로드 중...</span></div>
     <div class="timer-box" id="timerDisplay">D-Day 계산 중...</div>
-    <div class="week-grid" id="weekSelector"></div>
-
-    <div class="input-group">
-        <select id="nameSelect"><option value="">이름 선택</option></select>
-        <button class="btn btn-start" onclick="openActionModal('START')">시작</button>
-        <button class="btn btn-end" onclick="openActionModal('END')">종료</button>
+    
+    <div class="control-box">
+        <div class="week-grid" id="weekSelector"></div>
+        <div class="input-group">
+            <select id="nameSelect"><option value="">이름 선택</option></select>
+            <button class="btn btn-add" onclick="manualAddRecord()">운동기록추가</button>
+            <button class="btn btn-start" onclick="openActionModal('START')">시작</button>
+            <button class="btn btn-end" onclick="openActionModal('END')">종료</button>
+        </div>
     </div>
 
+    <div class="section-title">이번주 운동현황</div>
     <div class="table-wrapper">
         <table>
             <thead><tr><th>순위</th><th>이름</th><th>주간 현황</th><th>회</th><th>벌금</th></tr></thead>
@@ -184,6 +198,7 @@
     const adminPath = db.ref('sy_admin_v34');
 
     const members = ["우은미", "이계주", "김재현", "김종엽", "서호진", "이송희", "정환균", "황재균"];
+    // [수정] 요일선택바 항상 오늘날짜 디폴트
     let selectedDate = new Date().toISOString().split('T')[0];
     let allData = [];
     let paymentData = {};
@@ -192,7 +207,6 @@
 
     const FINE_START_DATE = "2026-03-09";
 
-    // 날짜 안전 생성 함수 (타임존 오류 방지)
     function safeDate(dateStr) {
         if (!dateStr) return new Date();
         return new Date(dateStr.replace(/-/g, '/') + ' 12:00:00');
@@ -220,6 +234,18 @@
         adminPath.on('value', snap => { adminSettings = snap.val() || {}; renderAdminList(); renderTable(allData); });
 
         setInterval(tick, 1000);
+    }
+
+    /* [추가] 운동기록추가 기능 함수 */
+    async function manualAddRecord() {
+        const name = document.getElementById('nameSelect').value;
+        if(!name) return alert("이름을 선택하세요.");
+        if(confirm(`[${name}]님에게 ${selectedDate} 기록을 즉시 추가하시겠습니까?`)) {
+            let list = [...allData];
+            list.push({ name, date: selectedDate, start: "수동", end: "완료" });
+            await dataPath.set(list);
+            alert("기록이 추가되었습니다.");
+        }
     }
 
     function openReport() {
@@ -510,6 +536,7 @@
             const d = new Date(startDay); d.setDate(startDay.getDate() + i);
             const ds = d.toISOString().split('T')[0];
             const div = document.createElement('div');
+            // [수정] 항상 오늘 날짜가 디폴트 선택
             div.className = `day-card ${ds === selectedDate ? 'selected' : ''} ${ds === new Date().toISOString().split('T')[0] ? 'today' : ''}`;
             div.innerHTML = `<b>${['월','화','수','목','금','토','일'][i]}</b><span>${d.getDate()}</span>`;
             div.onclick = () => { selectedDate = ds; renderWeekCards(); };
