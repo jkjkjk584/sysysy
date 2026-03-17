@@ -6,6 +6,7 @@
     <title>삼영건강증진회 Master</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.0/kakao.min.js"></script>
     <style>
         :root { 
             --primary: #5da3d9; --danger: #e66755; 
@@ -17,7 +18,6 @@
         .header-banner { background: linear-gradient(135deg, #5da3d9, #5cc97e); padding: 15px; border-radius: 18px; color: white; text-align: center; margin-bottom: 10px; font-weight: bold; font-size: 1rem; }
         .timer-box { border: 1px dashed var(--danger); background: #fff9f9; padding: 6px; border-radius: 12px; text-align: center; color: var(--danger); font-weight: bold; font-size: 0.75rem; margin-bottom: 12px; }
         
-        /* [수정] 요일선택바와 입력그룹을 하나의 박스로 구성 */
         .control-box { background: #fdfdfd; border: 1px solid #eee; border-radius: 18px; padding: 12px; margin-bottom: 20px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
         
         .week-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 15px; }
@@ -27,15 +27,13 @@
         .day-card.selected { background: var(--primary); border-color: var(--primary); color: white; }
         .day-card.today { border: 1.5px solid var(--success); }
         
-        /* [수정] 입력 그룹 레이아웃: 이름 선택칸 좁힘 및 버튼 추가 */
         .input-group { display: flex; gap: 4px; margin-bottom: 0; }
         select { flex: 0.8; padding: 10px; border-radius: 12px; border: 1px solid #ddd; font-weight: bold; font-size: 0.85rem; }
         .btn { flex: 1; border: none; border-radius: 12px; color: white; font-weight: bold; cursor: pointer; font-size: 0.75rem; white-space: nowrap; }
-        .btn-add { background: #6c757d; } /* 운동기록추가 버튼 */
+        .btn-add { background: #6c757d; } 
         .btn-start { background: var(--primary); }
         .btn-end { background: var(--danger); }
 
-        /* [수정] 현황테이블 타이틀 스타일 */
         .section-title { font-size: 0.9rem; font-weight: bold; margin: 0 0 10px 5px; color: #555; display: flex; align-items: center; }
         .section-title::before { content: ''; width: 4px; height: 14px; background: var(--success); margin-right: 8px; border-radius: 2px; }
 
@@ -85,6 +83,8 @@
     </style>
 </head>
 <body>
+
+<input type="file" id="kakaoPhotoInput" accept="image/*" style="display:none;">
 
 <div id="actionModal" class="modal">
     <div class="modal-box">
@@ -198,8 +198,17 @@
     const adminPath = db.ref('sy_admin_v34');
 
     const members = ["우은미", "이계주", "김재현", "김종엽", "서호진", "이송희", "정환균", "황재균"];
-    // [수정] 요일선택바 항상 오늘날짜 디폴트
-    let selectedDate = new Date().toISOString().split('T')[0];
+    
+    // 로컬 시간을 반영한 오늘 날짜 문자열 함수
+    const getTodayStr = () => {
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = String(now.getMonth() + 1).padStart(2, '0');
+        const d = String(now.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    };
+
+    let selectedDate = getTodayStr(); 
     let allData = [];
     let paymentData = {};
     let adminSettings = {};
@@ -213,6 +222,9 @@
     }
 
     function init() {
+        // 카카오 초기화
+        if (!Kakao.isInitialized()) Kakao.init('586678c7f1fd7c2d42c3f3b922499b65');
+
         const sel = document.getElementById('nameSelect');
         members.forEach(m => { sel.innerHTML += `<option value="${m}">${m}</option>`; });
         
@@ -236,7 +248,6 @@
         setInterval(tick, 1000);
     }
 
-    /* [추가] 운동기록추가 기능 함수 */
     async function manualAddRecord() {
         const name = document.getElementById('nameSelect').value;
         if(!name) return alert("이름을 선택하세요.");
@@ -259,7 +270,7 @@
         let day = date.getDay();
         let diff = date.getDate() - (day === 0 ? 6 : day - 1);
         let monday = new Date(date.setDate(diff));
-        return monday.toISOString().split('T')[0];
+        return monday.getFullYear() + '-' + String(monday.getMonth() + 1).padStart(2, '0') + '-' + String(monday.getDate()).padStart(2, '0');
     }
 
     function renderCalendar() {
@@ -329,7 +340,8 @@
     }
 
     function renderTable(data) {
-        const monStr = getMonday(new Date().toISOString().split('T')[0]);
+        const today = getTodayStr();
+        const monStr = getMonday(today);
         let weekFineTotal = 0; let monthSaveTotal = 0;
 
         const summary = members.map(m => {
@@ -393,14 +405,14 @@
     }
 
     function renderLastWeekReport() {
-        const now = new Date();
-        const lastMonDate = safeDate(getMonday(now.toISOString().split('T')[0]));
+        const today = getTodayStr();
+        const lastMonDate = safeDate(getMonday(today));
         lastMonDate.setDate(lastMonDate.getDate() - 7);
-        const lastMonStr = lastMonDate.toISOString().split('T')[0];
+        const lastMonStr = lastMonDate.getFullYear() + '-' + String(lastMonDate.getMonth() + 1).padStart(2, '0') + '-' + String(lastMonDate.getDate()).padStart(2, '0');
         
         const lastSunDate = new Date(lastMonDate);
         lastSunDate.setDate(lastSunDate.getDate() + 6);
-        const lastSunStr = lastSunDate.toISOString().split('T')[0];
+        const lastSunStr = lastSunDate.getFullYear() + '-' + String(lastSunDate.getMonth() + 1).padStart(2, '0') + '-' + String(lastSunDate.getDate()).padStart(2, '0');
         const weekKey = `W_${lastMonStr}`;
 
         let html = "";
@@ -434,7 +446,8 @@
         const month = now.getMonth() + 1;
         document.getElementById('currentMonthTitle').innerText = `${month}월 누적`;
 
-        const todayMon = safeDate(getMonday(now.toISOString().split('T')[0]));
+        const today = getTodayStr();
+        const todayMon = safeDate(getMonday(today));
 
         let html = members.map(m => {
             const getAccumulatedFine = (startDateStr, limitDateObj) => {
@@ -444,10 +457,10 @@
                 if (current < fineStart) current = new Date(fineStart);
                 
                 while (current < limitDateObj) {
-                    const monStr = getMonday(current.toISOString().split('T')[0]);
+                    const monStr = getMonday(current.getFullYear() + '-' + String(current.getMonth() + 1).padStart(2, '0') + '-' + String(current.getDate()).padStart(2, '0'));
                     const sun = safeDate(monStr); 
                     sun.setDate(sun.getDate() + 6);
-                    const sunStr = sun.toISOString().split('T')[0];
+                    const sunStr = sun.getFullYear() + '-' + String(sun.getMonth() + 1).padStart(2, '0') + '-' + String(sun.getDate()).padStart(2, '0');
                     
                     if (safeDate(sunStr) < limitDateObj) {
                         const logs = allData.filter(d => d.name === m && d.date >= monStr && d.date <= sunStr && d.end);
@@ -475,7 +488,7 @@
         const startDay = safeDate(getMonday(selectedDate));
         const targetDate = new Date(startDay);
         targetDate.setDate(startDay.getDate() + dayIdx);
-        const dateStr = targetDate.toISOString().split('T')[0];
+        const dateStr = targetDate.getFullYear() + '-' + String(targetDate.getMonth() + 1).padStart(2, '0') + '-' + String(targetDate.getDate()).padStart(2, '0');
         
         const record = allData.find(r => r.name === name && r.date === dateStr);
         if(!record) return;
@@ -499,7 +512,7 @@
             if(globalIng) return alert(`종료되지 않은 기록이 있습니다.`);
             if(todayIdx > -1) return alert("이미 완료된 날짜입니다.");
             document.getElementById('actionTitle').innerText = "기록 시작 🔥";
-            document.getElementById('actionMsg').innerText = "운동을 시작하시겠습니까?";
+            document.getElementById('actionMsg').innerText = "사진을 선택하고 운동을 시작하시겠습니까?";
         } else {
             if(!globalIng) return alert("진행 중인 운동이 없습니다.");
             const startParts = globalIng.start.split(':');
@@ -515,29 +528,80 @@
         document.getElementById('actionModal').style.display = 'flex';
     }
 
+    // [핵심 로직] 시작 시 사진 선택 및 카카오톡 공유 처리
     document.getElementById('actionConfirmBtn').onclick = async () => {
         const { type, name } = pendingAction;
         if(type === 'END' && document.getElementById('shortTimeConfirm').style.display === 'block' && !document.getElementById('confirmCheck').checked) return alert("확인 체크박스에 체크해주세요.");
+        
+        if (type === 'START') {
+            const photoInput = document.getElementById('kakaoPhotoInput');
+            
+            // 사진 선택 이벤트 핸들러 설정
+            photoInput.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                try {
+                    // 1. 카카오 서버에 이미지 업로드
+                    const res = await Kakao.Share.uploadImage({ file: [file] });
+                    const imageUrl = res.infos.original.url;
+
+                    // 2. 카카오톡 공유 메시지 전송창 띄우기
+                    Kakao.Share.sendDefault({
+                        objectType: 'feed',
+                        content: {
+                            title: '🔥 운동 시작!',
+                            description: `${name}님이 운동을 시작합니다! 모두 응원해주세요!`,
+                            imageUrl: imageUrl,
+                            link: { mobileWebUrl: window.location.href, webUrl: window.location.href }
+                        },
+                    });
+
+                    // 3. 파이어베이스에 기록 저장
+                    await executeSave(type, name);
+                    closeActionModal();
+                } catch (err) {
+                    console.error(err);
+                    alert("카카오톡 공유 중 오류가 발생했습니다.");
+                } finally {
+                    photoInput.value = ""; // 인풋 초기화
+                }
+            };
+            
+            // 사진 앨범 열기
+            photoInput.click();
+
+        } else {
+            // 종료(END)는 기존과 동일하게 바로 저장
+            await executeSave(type, name);
+            closeActionModal();
+        }
+    };
+
+    // 파이어베이스 저장 실제 실행 함수
+    async function executeSave(type, name) {
         const now = new Date();
         const time = now.getHours().toString().padStart(2,'0') + ":" + now.getMinutes().toString().padStart(2,'0') + ":" + now.getSeconds().toString().padStart(2,'0');
         let list = [...allData];
         if(type === 'START') list.push({ name, date: selectedDate, start: time, end: "" });
         else { const idx = list.findIndex(r => r.name === name && r.end === ""); if(idx > -1) list[idx].end = time; }
         await dataPath.set(list);
-        closeActionModal();
-    };
+    }
 
     function renderWeekCards() {
         const container = document.getElementById('weekSelector');
-        const monStr = getMonday(new Date().toISOString().split('T')[0]);
+        const todayStr = getTodayStr(); 
+        const monStr = getMonday(todayStr);
         const startDay = safeDate(monStr);
+        
         container.innerHTML = '';
         for(let i=0; i<7; i++) {
-            const d = new Date(startDay); d.setDate(startDay.getDate() + i);
-            const ds = d.toISOString().split('T')[0];
+            const d = new Date(startDay); 
+            d.setDate(startDay.getDate() + i);
+            const ds = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+            
             const div = document.createElement('div');
-            // [수정] 항상 오늘 날짜가 디폴트 선택
-            div.className = `day-card ${ds === selectedDate ? 'selected' : ''} ${ds === new Date().toISOString().split('T')[0] ? 'today' : ''}`;
+            div.className = `day-card ${ds === selectedDate ? 'selected' : ''} ${ds === todayStr ? 'today' : ''}`;
             div.innerHTML = `<b>${['월','화','수','목','금','토','일'][i]}</b><span>${d.getDate()}</span>`;
             div.onclick = () => { selectedDate = ds; renderWeekCards(); };
             container.appendChild(div);
@@ -546,7 +610,8 @@
 
     function tick() {
         const now = new Date();
-        const sun = safeDate(getMonday(now.toISOString().split('T')[0]));
+        const todayStr = getTodayStr();
+        const sun = safeDate(getMonday(todayStr));
         sun.setDate(sun.getDate() + 7); sun.setHours(0,0,0,0);
         const diff = sun - now;
         const h = String(Math.floor((diff/3600000)%24)).padStart(2,'0'), m = String(Math.floor((diff/60000)%60)).padStart(2,'0'), s = String(Math.floor((diff/1000)%60)).padStart(2,'0');
@@ -571,7 +636,7 @@
         Object.keys(paymentData).forEach(k => { csv += `${k},${paymentData[k]}\n`; });
         const a = document.createElement("a");
         a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
-        a.download = `삼영백업_${new Date().toISOString().split('T')[0]}.csv`;
+        a.download = `삼영백업_${getTodayStr()}.csv`;
         a.click();
     }
     
