@@ -11,7 +11,9 @@
         :root { 
             --primary: #5da3d9; --danger: #e66755; 
             --success: #5cc97e; --warning: #ff9800; 
-            --bg: #f2f4f7; --text: #333; --working: #fff9f0; 
+            --bg: #f2f4f7; --text: #333; --working: #fff9f0;
+            --kakao-yellow: #fee500;
+            --kakao-brown: #3c1e1e;
         }
         body { font-family: 'Pretendard', sans-serif; background: var(--bg); margin: 0; padding: 10px; color: var(--text); -webkit-tap-highlight-color: transparent; }
         .container { max-width: 500px; margin: 0 auto; background: white; padding: 15px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
@@ -28,11 +30,11 @@
         .day-card.today { border: 1.5px solid var(--success); }
         
         .input-group { display: flex; gap: 4px; margin-bottom: 0; }
-        select { flex: 0.8; padding: 10px; border-radius: 12px; border: 1px solid #ddd; font-weight: bold; font-size: 0.85rem; }
-        .btn { flex: 1; border: none; border-radius: 12px; color: white; font-weight: bold; cursor: pointer; font-size: 0.75rem; white-space: nowrap; }
+        select { flex: 2.5; padding: 10px; border-radius: 12px; border: 1px solid #ddd; font-weight: bold; font-size: 0.85rem; }
+        .btn { flex: 0.8; border: none; border-radius: 12px; color: white; font-weight: bold; cursor: pointer; font-size: 0.75rem; white-space: nowrap; display: flex; align-items: center; justify-content: center; gap: 4px; }
         .btn-add { background: #6c757d; } 
-        .btn-start { background: var(--primary); }
-        .btn-end { background: var(--danger); }
+        .btn-start { background: var(--kakao-yellow); color: var(--kakao-brown); }
+        .btn-end { background: var(--kakao-yellow); color: var(--kakao-brown); }
 
         .section-title { font-size: 0.9rem; font-weight: bold; margin: 0 0 10px 5px; color: #555; display: flex; align-items: center; }
         .section-title::before { content: ''; width: 4px; height: 14px; background: var(--success); margin-right: 8px; border-radius: 2px; }
@@ -112,7 +114,7 @@
             <thead><tr><th>이름</th><th>횟수</th><th>벌금</th><th>납부</th></tr></thead>
             <tbody id="lastWeekReportBody"></tbody>
         </table>
-        <button class="btn btn-start" style="width:100%; margin-top:15px; padding:12px;" onclick="savePayments()">납부 상태 저장하기</button>
+        <button class="btn btn-add" style="width:100%; margin-top:15px; padding:12px; background:var(--primary); color:white;" onclick="savePayments()">납부 상태 저장하기</button>
     </div>
 
     <div class="report-section">
@@ -141,7 +143,7 @@
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
             <button class="btn" style="background:#666;" onclick="downloadCSV()">백업(CSV)</button>
             <button class="btn" style="background:#888;" onclick="document.getElementById('csvUpload').click()">복구(CSV)</button>
-            <button class="btn btn-end" style="grid-column: span 2;" onclick="resetData()">전체 초기화</button>
+            <button class="btn btn-end" style="grid-column: span 2; background:var(--danger); color:white;" onclick="resetData()">전체 초기화</button>
         </div>
     </div>
 </div>
@@ -154,8 +156,11 @@
         <div class="week-grid" id="weekSelector"></div>
         <div class="input-group">
             <select id="nameSelect"><option value="">이름 선택</option></select>
-            <button class="btn btn-add" onclick="manualAddRecord()">운동기록추가</button>
-            <button class="btn btn-start" onclick="openActionModal('START')">시작</button>
+            <button class="btn btn-add" onclick="manualAddRecord()">기록추가</button>
+            <button class="btn btn-start" onclick="openActionModal('START')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3c-5.523 0-10 3.582-10 8c0 2.857 1.8 5.374 4.548 6.845l-1.148 4.155 4.752-3.155c.59.082 1.205.155 1.848.155 5.523 0 10-3.582 10-8s-4.477-8-10-8z"/></svg>
+                시작
+            </button>
             <button class="btn btn-end" onclick="openActionModal('END')">종료</button>
         </div>
     </div>
@@ -199,7 +204,6 @@
 
     const members = ["우은미", "이계주", "김재현", "김종엽", "서호진", "이송희", "정환균", "황재균"];
     
-    // 로컬 시간을 반영한 오늘 날짜 문자열 함수
     const getTodayStr = () => {
         const now = new Date();
         const y = now.getFullYear();
@@ -222,7 +226,6 @@
     }
 
     function init() {
-        // 카카오 초기화
         if (!Kakao.isInitialized()) Kakao.init('586678c7f1fd7c2d42c3f3b922499b65');
 
         const sel = document.getElementById('nameSelect');
@@ -278,22 +281,17 @@
         const calMonth = parseInt(document.getElementById('calMonthSelect').value);
         const now = new Date();
         const year = now.getFullYear();
-        
         const firstDayDate = new Date(year, calMonth - 1, 1, 12, 0, 0);
         let emptyCells = firstDayDate.getDay();
         emptyCells = emptyCells === 0 ? 6 : emptyCells - 1; 
-
         const lastDate = new Date(year, calMonth, 0).getDate();
-        
         let html = ['월','화','수','목','금','토','일'].map(d => `<div class="cal-day-head" style="${d==='일'?'color:red':''}">${d}</div>`).join('');
         for(let i=0; i<emptyCells; i++) html += `<div class="cal-cell"></div>`;
-        
         for(let d=1; d<=lastDate; d++) {
             const ds = `${year}-${String(calMonth).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
             const dateObj = safeDate(ds);
             const isSunday = dateObj.getDay() === 0;
             const currentMon = getMonday(ds);
-            
             let gauges = "";
             members.forEach(m => {
                 const dayLog = allData.find(r => r.name === m && r.date === ds && r.end);
@@ -309,11 +307,7 @@
                     </div>`;
                 }
             });
-            
-            html += `<div class="cal-cell">
-                <span style="font-weight:bold; color:${isSunday ? 'red' : '#666'};">${d}</span>
-                ${gauges}
-            </div>`;
+            html += `<div class="cal-cell"><span style="font-weight:bold; color:${isSunday ? 'red' : '#666'};">${d}</span>${gauges}</div>`;
         }
         grid.innerHTML = html;
     }
@@ -330,9 +324,7 @@
         }).join('');
     }
 
-    async function toggleActivity(name, currentStatus) {
-        await adminPath.child(name).set({ disabled: !currentStatus });
-    }
+    async function toggleActivity(name, currentStatus) { await adminPath.child(name).set({ disabled: !currentStatus }); }
 
     function calculateFineAmount(cnt, isOff) {
         if (isOff) return 0;
@@ -343,13 +335,11 @@
         const today = getTodayStr();
         const monStr = getMonday(today);
         let weekFineTotal = 0; let monthSaveTotal = 0;
-
         const summary = members.map(m => {
             const isOff = adminSettings[m]?.disabled || false; 
             const wLogs = data.filter(d => d.name === m && d.date >= monStr);
             const globalIng = data.find(d => d.name === m && d.end === "");
             const dBit = [0,0,0,0,0,0,0];
-            
             wLogs.forEach(l => {
                 if(l.end) {
                     const logDate = safeDate(l.date);
@@ -360,18 +350,13 @@
             const cnt = dBit.filter(b => b === 1).length;
             const fine = calculateFineAmount(cnt, isOff);
             weekFineTotal += fine;
-            
             const currentMonth = new Date().getMonth() + 1;
-            const currentYear = new Date().getFullYear();
-            const monthStartStr = `${currentYear}-${String(currentMonth).padStart(2,'0')}-01`;
+            const monthStartStr = `${new Date().getFullYear()}-${String(currentMonth).padStart(2,'0')}-01`;
             monthSaveTotal += (data.filter(d => d.name === m && d.date >= monthStartStr && d.end).length * 1000);
-            
             return { name: m, cnt, fine, dBit, globalIng, isOff };
         }).sort((a,b) => b.cnt - a.cnt);
-
         document.getElementById('totalWeekFine').innerText = weekFineTotal.toLocaleString() + "원";
         document.getElementById('totalMonthSave').innerText = monthSaveTotal.toLocaleString() + "원";
-        
         let html = "";
         summary.forEach((s, i) => {
             const badges = ['월','화','수','목','금','토','일'].map((n, idx) => {
@@ -383,85 +368,49 @@
                 }
                 return `<div class="${cls}" onclick="editLog('${s.name}', ${idx})">${cls.includes('ing') ? 'ing' : n}</div>`;
             }).join('');
-            html += `<tr class="${s.globalIng ? 'is-working' : ''} ${s.isOff ? 'is-disabled' : ''}">
-                <td>${i+1}</td>
-                <td style="font-weight:bold">${s.name}${s.isOff ? '<br><small>(휴식)</small>' : ''}</td>
-                <td>${badges}</td>
-                <td>${s.cnt}</td>
-                <td style="color:var(--danger)">${s.fine.toLocaleString()}</td>
-            </tr>`;
+            html += `<tr class="${s.globalIng ? 'is-working' : ''} ${s.isOff ? 'is-disabled' : ''}"><td>${i+1}</td><td style="font-weight:bold">${s.name}${s.isOff ? '<br><small>(휴식)</small>' : ''}</td><td>${badges}</td><td>${s.cnt}</td><td style="color:var(--danger)">${s.fine.toLocaleString()}</td></tr>`;
         });
         document.getElementById('statTable').innerHTML = html;
     }
 
-    async function savePayments() {
-        await payPath.set(paymentData);
-        alert("납부 상태가 저장되었습니다.");
-    }
-
-    function togglePaymentLocal(name, weekKey) {
-        const key = `${name}_${weekKey}`;
-        paymentData[key] = !paymentData[key];
-    }
+    async function savePayments() { await payPath.set(paymentData); alert("납부 상태가 저장되었습니다."); }
+    function togglePaymentLocal(name, weekKey) { const key = `${name}_${weekKey}`; paymentData[key] = !paymentData[key]; }
 
     function renderLastWeekReport() {
         const today = getTodayStr();
         const lastMonDate = safeDate(getMonday(today));
         lastMonDate.setDate(lastMonDate.getDate() - 7);
         const lastMonStr = lastMonDate.getFullYear() + '-' + String(lastMonDate.getMonth() + 1).padStart(2, '0') + '-' + String(lastMonDate.getDate()).padStart(2, '0');
-        
         const lastSunDate = new Date(lastMonDate);
         lastSunDate.setDate(lastSunDate.getDate() + 6);
         const lastSunStr = lastSunDate.getFullYear() + '-' + String(lastSunDate.getMonth() + 1).padStart(2, '0') + '-' + String(lastSunDate.getDate()).padStart(2, '0');
         const weekKey = `W_${lastMonStr}`;
-
-        let html = "";
-        let totalUnpaid = 0;
-
+        let html = ""; let totalUnpaid = 0;
         members.forEach(m => {
             const isOff = adminSettings[m]?.disabled || false;
             const logs = allData.filter(d => d.name === m && d.date >= lastMonStr && d.date <= lastSunStr && d.end);
-            const dates = new Set(logs.map(l => l.date));
-            const cnt = dates.size;
-            
+            const cnt = new Set(logs.map(l => l.date)).size;
             const fine = (lastMonStr < FINE_START_DATE) ? 0 : calculateFineAmount(cnt, isOff);
             const isPaid = paymentData[`${m}_${weekKey}`] || false;
             if(!isPaid) totalUnpaid += fine;
-
-            html += `<tr>
-                <td>${m}</td>
-                <td>${cnt}회</td>
-                <td style="color:${fine>0?'var(--danger)':'#ccc'}; font-weight:bold;">${fine.toLocaleString()}원</td>
-                <td><input type="checkbox" class="pay-check" ${isPaid ? 'checked' : ''} ${fine===0 ? 'disabled' : ''} onchange="togglePaymentLocal('${m}', '${weekKey}')"></td>
-            </tr>`;
+            html += `<tr><td>${m}</td><td>${cnt}회</td><td style="color:${fine>0?'var(--danger)':'#ccc'}; font-weight:bold;">${fine.toLocaleString()}원</td><td><input type="checkbox" class="pay-check" ${isPaid ? 'checked' : ''} ${fine===0 ? 'disabled' : ''} onchange="togglePaymentLocal('${m}', '${weekKey}')"></td></tr>`;
         });
-        
         document.getElementById('lastWeekReportBody').innerHTML = html;
         document.getElementById('unpaidTotal').innerText = `미납액: ${totalUnpaid.toLocaleString()}원`;
     }
 
     function renderAccumulatedReport() {
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = now.getMonth() + 1;
+        const now = new Date(); const year = now.getFullYear(); const month = now.getMonth() + 1;
         document.getElementById('currentMonthTitle').innerText = `${month}월 누적`;
-
-        const today = getTodayStr();
-        const todayMon = safeDate(getMonday(today));
-
+        const today = getTodayStr(); const todayMon = safeDate(getMonday(today));
         let html = members.map(m => {
             const getAccumulatedFine = (startDateStr, limitDateObj) => {
-                let totalFine = 0;
-                let current = safeDate(startDateStr);
-                const fineStart = safeDate(FINE_START_DATE);
+                let totalFine = 0; let current = safeDate(startDateStr); const fineStart = safeDate(FINE_START_DATE);
                 if (current < fineStart) current = new Date(fineStart);
-                
                 while (current < limitDateObj) {
                     const monStr = getMonday(current.getFullYear() + '-' + String(current.getMonth() + 1).padStart(2, '0') + '-' + String(current.getDate()).padStart(2, '0'));
-                    const sun = safeDate(monStr); 
-                    sun.setDate(sun.getDate() + 6);
+                    const sun = safeDate(monStr); sun.setDate(sun.getDate() + 6);
                     const sunStr = sun.getFullYear() + '-' + String(sun.getMonth() + 1).padStart(2, '0') + '-' + String(sun.getDate()).padStart(2, '0');
-                    
                     if (safeDate(sunStr) < limitDateObj) {
                         const logs = allData.filter(d => d.name === m && d.date >= monStr && d.date <= sunStr && d.end);
                         const cnt = new Set(logs.map(l => l.date)).size;
@@ -471,15 +420,7 @@
                 }
                 return totalFine;
             };
-
-            const mFine = getAccumulatedFine(`${year}-${String(month).padStart(2,'0')}-01`, todayMon);
-            const yFine = getAccumulatedFine(`${year}-01-01`, todayMon);
-
-            return `<tr>
-                <td style="font-weight:bold">${m}</td>
-                <td style="color:var(--danger)">${mFine.toLocaleString()}원</td>
-                <td style="color:var(--danger)">${yFine.toLocaleString()}원</td>
-            </tr>`;
+            return `<tr><td style="font-weight:bold">${m}</td><td style="color:var(--danger)">${getAccumulatedFine(`${year}-${String(month).padStart(2,'0')}-01`, todayMon).toLocaleString()}원</td><td style="color:var(--danger)">${getAccumulatedFine(`${year}-01-01`, todayMon).toLocaleString()}원</td></tr>`;
         }).join('');
         document.getElementById('totalAccumulatedBody').innerHTML = html;
     }
@@ -489,7 +430,6 @@
         const targetDate = new Date(startDay);
         targetDate.setDate(startDay.getDate() + dayIdx);
         const dateStr = targetDate.getFullYear() + '-' + String(targetDate.getMonth() + 1).padStart(2, '0') + '-' + String(targetDate.getDate()).padStart(2, '0');
-        
         const record = allData.find(r => r.name === name && r.date === dateStr);
         if(!record) return;
         if(confirm(`[${name}] ${dateStr} 기록을 삭제할까요?`)) {
@@ -528,25 +468,25 @@
         document.getElementById('actionModal').style.display = 'flex';
     }
 
-    // [핵심 로직] 시작 시 사진 선택 및 카카오톡 공유 처리
+    // [핵심 로직 수정] 저장 후 카카오 공유 진행 (공유 실패해도 기록 유지)
     document.getElementById('actionConfirmBtn').onclick = async () => {
         const { type, name } = pendingAction;
         if(type === 'END' && document.getElementById('shortTimeConfirm').style.display === 'block' && !document.getElementById('confirmCheck').checked) return alert("확인 체크박스에 체크해주세요.");
         
         if (type === 'START') {
             const photoInput = document.getElementById('kakaoPhotoInput');
-            
-            // 사진 선택 이벤트 핸들러 설정
             photoInput.onchange = async (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
 
+                // 1. [가장 중요] 파이어베이스에 먼저 저장 (공유 실패 대비)
+                await executeSave(type, name);
+                closeActionModal();
+
+                // 2. 이후 카카오 공유 절차 진행
                 try {
-                    // 1. 카카오 서버에 이미지 업로드
                     const res = await Kakao.Share.uploadImage({ file: [file] });
                     const imageUrl = res.infos.original.url;
-
-                    // 2. 카카오톡 공유 메시지 전송창 띄우기
                     Kakao.Share.sendDefault({
                         objectType: 'feed',
                         content: {
@@ -556,29 +496,19 @@
                             link: { mobileWebUrl: window.location.href, webUrl: window.location.href }
                         },
                     });
-
-                    // 3. 파이어베이스에 기록 저장
-                    await executeSave(type, name);
-                    closeActionModal();
                 } catch (err) {
                     console.error(err);
-                    alert("카카오톡 공유 중 오류가 발생했습니다.");
-                } finally {
-                    photoInput.value = ""; // 인풋 초기화
-                }
+                    // 이미 기록은 저장되었으므로 알림만 띄움
+                    alert("운동 기록은 저장되었으나 카카오톡 공유에 실패했습니다.");
+                } finally { photoInput.value = ""; }
             };
-            
-            // 사진 앨범 열기
             photoInput.click();
-
         } else {
-            // 종료(END)는 기존과 동일하게 바로 저장
             await executeSave(type, name);
             closeActionModal();
         }
     };
 
-    // 파이어베이스 저장 실제 실행 함수
     async function executeSave(type, name) {
         const now = new Date();
         const time = now.getHours().toString().padStart(2,'0') + ":" + now.getMinutes().toString().padStart(2,'0') + ":" + now.getSeconds().toString().padStart(2,'0');
@@ -590,16 +520,11 @@
 
     function renderWeekCards() {
         const container = document.getElementById('weekSelector');
-        const todayStr = getTodayStr(); 
-        const monStr = getMonday(todayStr);
-        const startDay = safeDate(monStr);
-        
+        const todayStr = getTodayStr(); const monStr = getMonday(todayStr); const startDay = safeDate(monStr);
         container.innerHTML = '';
         for(let i=0; i<7; i++) {
-            const d = new Date(startDay); 
-            d.setDate(startDay.getDate() + i);
+            const d = new Date(startDay); d.setDate(startDay.getDate() + i);
             const ds = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-            
             const div = document.createElement('div');
             div.className = `day-card ${ds === selectedDate ? 'selected' : ''} ${ds === todayStr ? 'today' : ''}`;
             div.innerHTML = `<b>${['월','화','수','목','금','토','일'][i]}</b><span>${d.getDate()}</span>`;
@@ -609,18 +534,14 @@
     }
 
     function tick() {
-        const now = new Date();
-        const todayStr = getTodayStr();
-        const sun = safeDate(getMonday(todayStr));
-        sun.setDate(sun.getDate() + 7); sun.setHours(0,0,0,0);
+        const now = new Date(); const todayStr = getTodayStr(); const sun = safeDate(getMonday(todayStr)); sun.setDate(sun.getDate() + 7); sun.setHours(0,0,0,0);
         const diff = sun - now;
         const h = String(Math.floor((diff/3600000)%24)).padStart(2,'0'), m = String(Math.floor((diff/60000)%60)).padStart(2,'0'), s = String(Math.floor((diff/1000)%60)).padStart(2,'0');
         document.getElementById('timerDisplay').innerText = `정산까지: ${Math.floor(diff/86400000)}일 ${h}:${m}:${s}`;
     }
 
     function updateHeaderTitle() {
-        const now = new Date();
-        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+        const now = new Date(); const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
         const wk = Math.ceil((now.getDate() + firstDay.getDay() - 1) / 7);
         document.getElementById('mainTitle').innerText = `🔥 삼영건강증진회 ${now.getMonth()+1}월 ${wk}주차 🔥`;
     }
@@ -628,24 +549,19 @@
     function closeActionModal() { document.getElementById('actionModal').style.display = 'none'; }
     function toggleView(id, show) { document.getElementById(id).style.display = show ? 'block' : 'none'; }
     async function resetData() { if(confirm("전체 데이터(납부, 활동중지 포함)를 초기화하시겠습니까?")) { await dataPath.set(null); await payPath.set(null); await adminPath.set(null); } }
-    
     function downloadCSV() {
         let csv = "\uFEFF이름,날짜,시작시간,종료시간\n";
         allData.forEach(r => { csv += `${r.name},${r.date},${r.start},${r.end}\n`; });
         csv += "\n[납부 정보]\n키,납부여부\n";
         Object.keys(paymentData).forEach(k => { csv += `${k},${paymentData[k]}\n`; });
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
-        a.download = `삼영백업_${getTodayStr()}.csv`;
-        a.click();
+        const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+        a.download = `삼영백업_${getTodayStr()}.csv`; a.click();
     }
-    
     function importCSV(input) {
         const file = input.files[0]; if (!file) return;
         const reader = new FileReader();
         reader.onload = async (e) => {
-            const content = e.target.result;
-            const sections = content.split('\n[납부 정보]\n');
+            const sections = e.target.result.split('\n[납부 정보]\n');
             const rows = sections[0].split('\n').slice(1);
             const importedData = rows.filter(r => r.trim()).map(r => {
                 const cols = r.split(',');
@@ -653,16 +569,9 @@
             });
             if (sections[1]) {
                 const payRows = sections[1].split('\n').slice(2);
-                payRows.forEach(r => {
-                    if(!r.trim()) return;
-                    const cols = r.split(',');
-                    paymentData[cols[0]] = (cols[1].trim() === 'true');
-                });
+                payRows.forEach(r => { if(!r.trim()) return; const cols = r.split(','); paymentData[cols[0]] = (cols[1].trim() === 'true'); });
             }
-            if (confirm(`${importedData.length}개 데이터를 복구할까요?`)) {
-                await dataPath.set(importedData);
-                await payPath.set(paymentData);
-            }
+            if (confirm(`${importedData.length}개 데이터를 복구할까요?`)) { await dataPath.set(importedData); await payPath.set(paymentData); }
         };
         reader.readAsText(file);
     }
