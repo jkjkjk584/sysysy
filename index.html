@@ -684,7 +684,7 @@ body{padding-bottom:82px!important}
             if(globalIng) return alert(`종료되지 않은 기록이 있습니다.`);
             if(todayIdx > -1) return alert("이미 완료된 날짜입니다.");
             document.getElementById('actionTitle').innerText = "기록 시작 🔥";
-            document.getElementById('actionMsg').innerText = "사진을 선택하고 운동을 시작하시겠습니까?";
+            document.getElementById('actionMsg').innerText = "사진을 선택하면 운동 시작을 먼저 저장하고, 이후 카톡 공유 여부를 다시 묻습니다.";
         } else {
             if(!globalIng) return alert("진행 중인 운동이 없습니다.");
             const startParts = globalIng.start.split(':');
@@ -757,37 +757,49 @@ body{padding-bottom:82px!important}
                     await executeSave(type, name);
                     closeActionModal();
 
-                    // 2. 카카오 공유는 실패해도 운동 시작은 유지
-                    try {
-                        if (window.Kakao && Kakao.isInitialized()) {
-                            const kakaoFile = await resizeImageForKakao(file);
-                            const res = await Kakao.Share.uploadImage({ file: [kakaoFile] });
-                            const imageUrl = res?.infos?.original?.url;
-                            Kakao.Share.sendDefault({
-                                objectType: 'feed',
-                                content: {
-                                    title: '🔥 운동 시작!',
-                                    description: `${name}님이 운동을 시작합니다! 모두 응원해주세요!`,
-                                    imageUrl: imageUrl,
-                                    link: { mobileWebUrl: window.location.href, webUrl: window.location.href }
-                                },
-                            });
-                        }
-                    } catch (shareErr) {
-                        console.error(shareErr);
+                    // 2. 사진 선택 직후 자동 공유하지 않고, 사용자가 한 번 더 확인한 뒤 카카오 공유 실행
+                    const inKakao = /KAKAOTALK/i.test(navigator.userAgent || '');
+                    const shareMsg = inKakao
+                        ? '운동 시작이 저장되었습니다.\n\n카톡 안에서 열린 화면에서는 공유창이 안 뜰 수 있습니다.\n그래도 지금 카톡방에 사진을 공유하시겠습니까?'
+                        : '운동 시작이 저장되었습니다.\n추가로 카톡방에 사진을 공유하시겠습니까?';
+                    const goShare = confirm(shareMsg);
+                    if (goShare) {
                         try {
                             if (window.Kakao && Kakao.isInitialized()) {
+                                const kakaoFile = await resizeImageForKakao(file);
+                                const res = await Kakao.Share.uploadImage({ file: [kakaoFile] });
+                                const imageUrl = res?.infos?.original?.url;
                                 Kakao.Share.sendDefault({
-                                    objectType: 'text',
-                                    text: `🔥 ${name}님이 운동을 시작했습니다!`,
-                                    link: { mobileWebUrl: window.location.href, webUrl: window.location.href }
+                                    objectType: 'feed',
+                                    content: {
+                                        title: '🔥 운동 시작!',
+                                        description: `${name}님이 운동을 시작합니다! 모두 응원해주세요!`,
+                                        imageUrl: imageUrl,
+                                        link: { mobileWebUrl: window.location.href, webUrl: window.location.href }
+                                    },
                                 });
                             } else {
-                                alert('운동 시작은 저장되었고, 카카오톡 사진 공유만 실패했습니다.');
+                                alert('카카오톡 공유 기능을 불러오지 못했습니다. 운동 시작 기록은 저장되었습니다.');
                             }
-                        } catch (textShareErr) {
-                            console.error(textShareErr);
-                            alert('운동 시작은 저장되었고, 카카오톡 공유만 실패했습니다.');
+                        } catch (shareErr) {
+                            console.error(shareErr);
+                            try {
+                                if (window.Kakao && Kakao.isInitialized()) {
+                                    const fallback = confirm('사진 공유창을 여는 데 실패했습니다. 텍스트로 대신 공유하시겠습니까?');
+                                    if (fallback) {
+                                        Kakao.Share.sendDefault({
+                                            objectType: 'text',
+                                            text: `🔥 ${name}님이 운동을 시작했습니다!`,
+                                            link: { mobileWebUrl: window.location.href, webUrl: window.location.href }
+                                        });
+                                    }
+                                } else {
+                                    alert('운동 시작은 저장되었고, 카카오톡 공유만 실패했습니다.');
+                                }
+                            } catch (textShareErr) {
+                                console.error(textShareErr);
+                                alert('운동 시작은 저장되었고, 카카오톡 공유만 실패했습니다. 카톡 안에서 실행 중이면 외부 브라우저에서 다시 시도해보세요.');
+                            }
                         }
                     }
                 } catch (err) {
