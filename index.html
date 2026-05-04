@@ -697,7 +697,7 @@ body{padding-bottom:82px!important}
             if(diff < 50) {
                 document.getElementById('actionMsg').innerHTML = `<b style='color:var(--danger)'>현재 ${diff < 0 ? 0 : diff}분 진행됨.</b><br>50분 미달입니다. 종료하시겠습니까?`;
                 confirmArea.style.display = 'block';
-            } else { document.getElementById('actionMsg').innerText = `${diff}분 완료! 저장합니다.`; confirmCheck.checked = true; }
+            } else { document.getElementById('actionMsg').innerText = `${diff}분 완료! 저장 후 공유 여부를 물어봅니다.`; confirmCheck.checked = true; }
         }
         document.getElementById('actionModal').style.display = 'flex';
     }
@@ -734,6 +734,148 @@ body{padding-bottom:82px!important}
         });
     }
 
+
+    const START_SHARE_MESSAGES = [
+        '{name}님 운동 시작! 오늘도 50분 완주 가봅시다 💪',
+        '{name}님 출발했습니다. 모두 응원해주세요 🔥',
+        '{name}님 운동 ON! 벌금 탈출 모드입니다 🚀',
+        '{name}님 인증 스타트! 오늘도 꾸준함 갑니다 📸',
+        '{name}님 운동 시작했습니다. 끝까지 달려봅시다 🏃',
+        '{name}님 오늘도 건강 적립 시작합니다 💙',
+        '{name}님 50분 챌린지 입장했습니다 ⏱️',
+        '{name}님 운동 버튼 눌렀습니다. 이제 도망 못 갑니다 😎',
+        '{name}님 오늘의 운동 기록 시작! 응원 부탁드립니다 🙌',
+        '{name}님 벌금 방어전 시작합니다 🛡️',
+        '{name}님 운동 스타트! 인증샷 기대하겠습니다 📷',
+        '{name}님 오늘도 삼영건강증진회 출석 완료 ✅',
+        '{name}님 움직이기 시작했습니다. 박수 한 번 주세요 👏',
+        '{name}님 운동 모드 진입! 50분만 버티면 됩니다 🔥',
+        '{name}님 오늘의 건강 투자 시작했습니다 💰',
+        '{name}님 운동 시작! 나중에 후회 없는 선택입니다 😄',
+        '{name}님 출발! 오늘도 꾸준함으로 이깁니다 🏁',
+        '{name}님 시작했습니다. 벌금보다 운동이 쉽습니다 😆',
+        '{name}님 오늘도 몸과 마음 충전하러 갑니다 ⚡',
+        '{name}님 운동 시작 인증! 모두 감시 부탁드립니다 👀',
+        '{name}님 50분 여정 시작했습니다. 파이팅입니다 💪',
+        '{name}님 오늘도 건강 루틴 가동했습니다 🔄',
+        '{name}님 운동 시작! 오늘도 멋진 인증 갑시다 📸',
+        '{name}님 벌금 차단 작전 시작했습니다 🚧',
+        '{name}님 운동 스타트! 작은 시작이 큰 차이를 만듭니다 🌱',
+        '{name}님 오늘의 땀방울 예약했습니다 💦',
+        '{name}님 건강 챌린지 시작! 끝까지 응원합니다 🙏',
+        '{name}님 운동 시작했습니다. 오늘도 기록 남깁니다 📝',
+        '{name}님 지금부터 50분 집중 들어갑니다 🎯',
+        '{name}님 운동 시작! 오늘도 해내는 사람입니다 🏆'
+    ];
+
+    const END_SHARE_MESSAGES = [
+        '{name}님 운동 완료! 오늘도 인증 성공입니다 ✅',
+        '{name}님 {minutes}분 완주했습니다. 박수 주세요 👏',
+        '{name}님 오늘 운동 클리어! 건강 적립 완료 💪',
+        '{name}님 벌금 탈출 성공했습니다 🚀',
+        '{name}님 운동 종료! 내일도 이어갑니다 🔥',
+        '{name}님 {minutes}분 운동 마무리했습니다. 아주 좋습니다 🏆',
+        '{name}님 완료 스탬프 찍었습니다. 오늘도 성공 📌',
+        '{name}님 오늘 운동 끝! 꾸준함 인정합니다 🙌',
+        '{name}님 운동 인증 완료. 수고 많으셨습니다 😄',
+        '{name}님 오늘도 해냈습니다. 멋진 마무리입니다 💙',
+        '{name}님 {minutes}분 기록 완료! 건강 계좌 입금됐습니다 💰',
+        '{name}님 운동 종료 인증! 벌금 방어 성공 🛡️',
+        '{name}님 오늘의 운동 미션 클리어했습니다 🎯',
+        '{name}님 땀 흘린 만큼 건강해졌습니다 💦',
+        '{name}님 운동 완료! 삼영건강증진회 인정입니다 ✅',
+        '{name}님 오늘 운동 마감했습니다. 칭찬 부탁드립니다 👏',
+        '{name}님 {minutes}분 달성! 오늘도 루틴 지켰습니다 🔄',
+        '{name}님 운동 종료! 좋은 흐름 계속 갑시다 🏃',
+        '{name}님 오늘의 운동 기록 저장 완료 📝',
+        '{name}님 성공적으로 마무리했습니다. 내일도 파이팅 💪'
+    ];
+
+    function pickRandomMessage(list, vars = {}) {
+        const template = list[Math.floor(Math.random() * list.length)] || '';
+        return template.replace(/\{(\w+)\}/g, (_, key) => vars[key] ?? '');
+    }
+
+    function getElapsedMinutesFromRecord(record) {
+        if(!record || !record.start) return 0;
+        const parts = String(record.start).split(':');
+        const st = safeDate(record.date);
+        st.setHours(parseInt(parts[0] || 0), parseInt(parts[1] || 0), parseInt(parts[2] || 0));
+        return Math.max(0, Math.floor((new Date() - st) / 60000));
+    }
+
+    function getWorkoutShareDescription(name, mode, minutes) {
+        if(mode === 'END') return pickRandomMessage(END_SHARE_MESSAGES, { name, minutes: minutes || 0 });
+        return pickRandomMessage(START_SHARE_MESSAGES, { name });
+    }
+
+    function getWorkoutShareTitle(mode) {
+        return mode === 'END' ? '✅ 운동 종료!' : '🔥 운동 시작!';
+    }
+
+    async function shareWorkoutPhotoToKakao(name, file, mode = 'START', minutes = 0) {
+        if (!(window.Kakao && Kakao.isInitialized())) {
+            alert('카카오톡 공유 기능을 불러오지 못했습니다.');
+            return;
+        }
+        const kakaoFile = await resizeImageForKakao(file);
+        const res = await Kakao.Share.uploadImage({ file: [kakaoFile] });
+        const imageUrl = res?.infos?.original?.url;
+        Kakao.Share.sendDefault({
+            objectType: 'feed',
+            content: {
+                title: getWorkoutShareTitle(mode),
+                description: getWorkoutShareDescription(name, mode, minutes),
+                imageUrl: imageUrl,
+                link: { mobileWebUrl: window.location.href, webUrl: window.location.href }
+            }
+        });
+    }
+
+    async function shareWorkoutTextToKakao(name, mode = 'START', minutes = 0) {
+        const text = `${getWorkoutShareTitle(mode)}\n${getWorkoutShareDescription(name, mode, minutes)}`;
+        try {
+            if (!(window.Kakao && Kakao.isInitialized())) {
+                await copyTextFallback(text);
+                alert('카카오 공유를 사용할 수 없어 텍스트를 복사했습니다. 카톡방에 붙여넣어 주세요.');
+                return;
+            }
+            Kakao.Share.sendDefault({
+                objectType: 'text',
+                text,
+                link: { mobileWebUrl: window.location.href, webUrl: window.location.href }
+            });
+        } catch (err) {
+            console.error(err);
+            await copyTextFallback(text);
+            alert('카카오 공유창을 열지 못해 텍스트를 복사했습니다. 카톡방에 붙여넣어 주세요.');
+        }
+    }
+
+    function askEndShareAfterSave(name, minutes) {
+        const goShare = confirm('운동 종료가 저장되었습니다.\n카톡방에 운동 종료를 공유하시겠습니까?');
+        if(!goShare) return;
+        const withPhoto = confirm('사진으로 공유하시겠습니까?\n확인: 사진 선택 후 공유\n취소: 텍스트로 공유');
+        if(withPhoto) {
+            const photoInput = document.getElementById('kakaoPhotoInput');
+            photoInput.onchange = async (e) => {
+                const file = e.target.files[0];
+                if(!file) { photoInput.value = ''; return; }
+                try {
+                    await shareWorkoutPhotoToKakao(name, file, 'END', minutes);
+                } catch (err) {
+                    console.error(err);
+                    alert('사진 공유에 실패했습니다. 스스로 카톡방에 사진을 올려주세요!');
+                } finally {
+                    photoInput.value = '';
+                }
+            };
+            photoInput.click();
+        } else {
+            shareWorkoutTextToKakao(name, 'END', minutes);
+        }
+    }
+
     // [핵심 로직] 시작 시 사진 선택 및 카카오톡 공유 처리
     document.getElementById('actionConfirmBtn').onclick = async () => {
         const { type, name } = pendingAction;
@@ -763,22 +905,7 @@ body{padding-bottom:82px!important}
                     const goShare = confirm('운동 시작이 저장되었습니다.\n추가로 카톡방에 사진을 공유하시겠습니까?');
                     if (goShare) {
                         try {
-                            if (window.Kakao && Kakao.isInitialized()) {
-                                const kakaoFile = await resizeImageForKakao(file);
-                                const res = await Kakao.Share.uploadImage({ file: [kakaoFile] });
-                                const imageUrl = res?.infos?.original?.url;
-                                Kakao.Share.sendDefault({
-                                    objectType: 'feed',
-                                    content: {
-                                        title: '🔥 운동 시작!',
-                                        description: `${name}님이 운동을 시작합니다! 모두 응원해주세요!`,
-                                        imageUrl: imageUrl,
-                                        link: { mobileWebUrl: window.location.href, webUrl: window.location.href }
-                                    },
-                                });
-                            } else {
-                                alert('카카오톡 공유 기능을 불러오지 못했습니다. 운동 시작 기록은 저장되었습니다.');
-                            }
+                            await shareWorkoutPhotoToKakao(name, file, 'START');
                         } catch (shareErr) {
                             console.error(shareErr);
                             alert('사진 공유에 실패했습니다. 스스로 카톡방에 사진을 올려주세요!');
@@ -798,12 +925,14 @@ body{padding-bottom:82px!important}
             photoInput.click();
 
         } else {
-            // 종료(END)는 기존과 동일하게 바로 저장
             try {
                 confirmBtn.disabled = true;
                 confirmBtn.textContent = '저장 중...';
+                const activeRecord = allData.find(r => r.name === name && r.end === "");
+                const minutes = getElapsedMinutesFromRecord(activeRecord);
                 await executeSave(type, name);
                 closeActionModal();
+                askEndShareAfterSave(name, minutes);
             } catch (err) {
                 console.error(err);
                 alert('운동 종료 저장 중 오류가 발생했습니다. 다시 시도해주세요.');
