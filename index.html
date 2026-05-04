@@ -44,7 +44,7 @@ button,select,input{font-family:inherit} button{cursor:pointer}
 .streak-item,.badge-item,.bar-row{display:flex;align-items:center;justify-content:flex-start;gap:8px;background:#f7f9fd;border:1px solid #edf1f7;border-radius:14px;padding:8px 10px;font-size:.78rem;font-weight:900}.streak-item,.badge-item{min-width:0;white-space:normal;text-align:left;min-height:60px}
 .badge-icon{width:22px;height:22px;border-radius:8px;background:#fff;display:grid;place-items:center;box-shadow:0 2px 8px rgba(20,32,70,.05);flex:0 0 22px}.chip-stack{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;min-width:0;gap:3px}.chip-label{font-weight:900;color:var(--ink);font-size:.76rem;line-height:1.1}.chip-sub{font-size:.68rem;color:#667085;font-weight:800;line-height:1.1}
 .bar-chart{display:grid;gap:8px}.bar-info{width:82px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:900;font-size:.76rem}.bar-track{flex:1;height:10px;background:#edf1f7;border-radius:999px;overflow:hidden}.bar-fill{display:block;height:100%;width:var(--w,0%);background:linear-gradient(90deg,var(--blue),var(--blue2));border-radius:999px}.bar-fill.red{background:linear-gradient(90deg,#ff777d,var(--red))}.bar-val{width:58px;text-align:right;font-size:.74rem;font-weight:950;color:var(--blue)}
-.text-copy-btn{background:#fff;color:var(--green);border:1px solid #bfe8cf;border-radius:16px;padding:12px;font-weight:950}#fineReportSection{background:linear-gradient(180deg,#ffffff 0%,#fbfcff 100%);border-color:#dde6f6;box-shadow:0 10px 28px rgba(20,32,70,.08)}#fineReportSection .report-table thead th{background:linear-gradient(180deg,#f4f7ff,#edf2fb)}#fineReportSection .report-title{margin-bottom:12px}#fineReportSection .action-row{margin-top:14px}#fineReportPeriod{display:inline-flex;align-items:center;gap:6px;padding:8px 10px;border-radius:999px;background:linear-gradient(135deg,#eef3ff,#f7f9ff);box-shadow:inset 0 0 0 1px #dde6ff;white-space:nowrap;max-width:calc(100% - 110px);overflow:hidden;text-overflow:ellipsis;letter-spacing:-.02em}#fineReportRange{padding-left:4px}#unpaidTotal{display:inline-flex;align-items:center;justify-content:center;padding:6px 10px;border-radius:999px;background:#fff2f2;border:1px solid #ffd8dd}
+.text-copy-btn{background:#fff;color:var(--green);border:1px solid #bfe8cf;border-radius:16px;padding:12px;font-weight:950}#fineReportSection{background:linear-gradient(180deg,#ffffff 0%,#fbfcff 100%);border-color:#dde6f6;box-shadow:0 10px 28px rgba(20,32,70,.08)}#fineReportSection .report-table thead th{background:linear-gradient(180deg,#f4f7ff,#edf2fb)}#fineReportSection .report-title{margin-bottom:12px}#fineReportSection .action-row{margin-top:14px}#fineReportPeriod{display:inline-flex;align-items:center;gap:5px;padding:7px 9px;font-size:.76rem;border-radius:999px;background:linear-gradient(135deg,#eef3ff,#f7f9ff);box-shadow:inset 0 0 0 1px #dde6ff;white-space:nowrap;max-width:calc(100% - 110px);overflow:hidden;text-overflow:ellipsis;letter-spacing:-.02em}#fineReportRange{padding-left:4px}#unpaidTotal{display:inline-flex;align-items:center;justify-content:center;padding:6px 10px;border-radius:999px;background:#fff2f2;border:1px solid #ffd8dd}
 @media(max-width:380px){.action-row{grid-template-columns:1fr}.hero-actions{grid-template-columns:1fr 1fr}.hero-actions .cta,.hero-actions .outline-btn{height:50px;font-size:.84rem}.bar-info{width:66px}.bar-val{width:48px}}
 
 
@@ -82,6 +82,75 @@ body{background:linear-gradient(180deg,#edf4ff 0%,#f8fbff 48%,#dce9f8 100%);colo
 .full-layer{background:linear-gradient(180deg,#f1f7ff,#fbfdff 56%,#e5eff9)}.layer-head{position:sticky;top:0;z-index:10;padding:4px 0 12px;background:linear-gradient(180deg,rgba(241,247,255,.96),rgba(241,247,255,.82) 72%,rgba(241,247,255,0));backdrop-filter:blur(12px)}.layer-title{color:#163056}.icon-box{background:linear-gradient(135deg,#2f6bff,#6ec8ff);box-shadow:0 10px 22px rgba(47,107,255,.22)}.report-section{background:#fbfdff;border-color:#dbe7f5;box-shadow:0 10px 26px rgba(37,79,156,.09)}.report-title{color:#163056}.report-table th{background:#edf4ff;color:#7890aa}.report-table td{background:#fafdff;color:#163056}.report-table tbody tr{box-shadow:none}.stat-tile{background:#f3f8ff;border-color:#dbe7f5}.stat-tile b{color:#2f6bff}.stat-tile span{color:#7c8fa6}.bar-fill{background:linear-gradient(90deg,#6ec8ff,#2f6bff)}.bar-fill.red{background:linear-gradient(90deg,#ff8067,#e0482e)}.admin-row,.rule-row{border-color:#dce7f5}.edit-btn,.btn-mini{background:#f7fbff;color:#4b6490;border-color:#d7e4f4}.data-actions .btn{background:#f7fbff;border-color:#d7e4f4;color:#2366d1}.data-actions .danger{border-color:#ffc9b8;color:#e0482e}.admin-member-profile{display:flex;align-items:center;gap:10px;min-width:0;flex:1}.admin-avatar-sm{width:38px;height:38px;min-width:38px;max-width:38px;min-height:38px;max-height:38px;border-radius:12px;object-fit:cover;display:block;box-shadow:0 4px 12px rgba(37,79,156,.12);border:1px solid rgba(255,255,255,.9);background:#eaf0f7}.admin-member-meta{display:flex;flex-direction:column;min-width:0;overflow:hidden}.admin-member-meta b{font-size:.9rem;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.admin-member-meta small{font-size:.68rem;color:#7c8fa6;font-weight:800;line-height:1.15;margin-top:2px}.admin-row{gap:8px}.admin-row .status-chip{flex:0 0 auto}.admin-row .btn-mini{flex:0 0 auto;white-space:nowrap}
 #fineReportSection{background:linear-gradient(180deg,#fbfdff 0%,#eef5ff 100%);border-color:#d8e5f5;box-shadow:0 10px 28px rgba(47,107,255,.09)}#fineReportPeriod{background:linear-gradient(135deg,#eaf3ff,#f6fbff);box-shadow:inset 0 0 0 1px #cadfff;color:#2f6bff!important}#fineReportRange{color:#7c8fa6!important}#unpaidTotal{background:#fff0e8;border-color:#ffc9b8}.text-copy-btn{color:#2366d1;border-color:#cfe0ff;background:#f8fbff}
 .motivation-card{background:linear-gradient(135deg,#fafdff,#eef5ff);border-color:#dbe7f5;color:#253f62}.name-picker-note{background:linear-gradient(135deg,#f5faff,#ebf3ff);border-color:#dbe8fa;color:#4b6490}.name-choice{background:linear-gradient(180deg,#fbfdff,#eff5ff);border-color:#dbe6f5}.name-choice.active{background:linear-gradient(180deg,#eaf3ff,#f8fbff);border-color:#2f6bff;color:#2f6bff}.name-choice.active::after{background:#2f6bff;color:#fff}
+
+
+/* v2.8.12 compact tabbar + report rows + admin status center */
+body{padding-bottom:82px!important}
+.bottom-tabs{height:60px!important;bottom:8px!important;padding:6px 9px!important;border-radius:24px!important;gap:8px!important;width:min(calc(100% - 20px),470px)!important}
+.tab{gap:2px!important;padding:3px 4px!important;font-size:.66rem!important;border-radius:16px!important}
+.tab-icon{width:26px!important;height:26px!important;border-radius:10px!important}
+.tab-icon svg{width:16px!important;height:16px!important}
+.full-layer{height:calc(100% - 78px)!important}
+#fineReportSection{padding:11px 12px!important;border-radius:18px!important}
+#fineReportSection .report-title{margin-bottom:7px!important;font-size:.9rem!important}
+#fineReportSection .report-table{border-spacing:0 3px!important;font-size:.72rem!important}
+#fineReportSection .report-table th{padding:5px 3px!important;font-size:.62rem!important}
+#fineReportSection .report-table td{padding:6px 3px!important;line-height:1.15!important}
+#fineReportSection .report-table tbody tr td:first-child{border-radius:10px 0 0 10px!important}
+#fineReportSection .report-table tbody tr td:last-child{border-radius:0 10px 10px 0!important}
+#fineReportSection .pay-check{width:16px!important;height:16px!important}
+#fineReportSection .action-row{margin-top:9px!important;gap:6px!important;grid-template-columns:1fr 1fr!important}
+#fineReportSection .action-row .cta,#fineReportSection .action-row .text-copy-btn{padding:9px 5px!important;font-size:.72rem!important;border-radius:13px!important}
+#fineReportPeriod{font-size:.72rem!important;padding:6px 8px!important}
+#fineReportRange{font-size:.68rem!important;margin-bottom:7px!important}
+#unpaidTotal{padding:4px 8px!important;font-size:.74rem!important}
+#adminMemberList .admin-row{display:grid!important;grid-template-columns:minmax(0,1fr) 68px 74px!important;align-items:center!important;gap:7px!important;padding:8px 2px!important}
+#adminMemberList .status-chip{justify-self:center!important;text-align:center!important;min-width:58px!important;padding:5px 6px!important}
+#adminMemberList .btn-mini{justify-self:end!important;padding:7px 8px!important;font-size:.68rem!important}
+#adminMemberList .admin-avatar-sm{width:34px!important;height:34px!important;min-width:34px!important;max-width:34px!important;min-height:34px!important;max-height:34px!important}
+#adminMemberList .admin-member-profile{gap:8px!important}
+#adminMemberList .admin-member-meta b{font-size:.86rem!important}
+#adminMemberList .admin-member-meta small{font-size:.64rem!important}
+@media(max-width:380px){
+  .bottom-tabs{height:58px!important;padding:5px 8px!important}
+  #adminMemberList .admin-row{grid-template-columns:minmax(0,1fr) 60px 66px!important;gap:5px!important}
+  #adminMemberList .btn-mini{font-size:.64rem!important;padding:6px 6px!important}
+  #adminMemberList .status-chip{font-size:.66rem!important;min-width:54px!important}
+}
+
+
+
+/* v2.8.13 관리자 멤버관리 상태칩 정확한 중앙 정렬 */
+#adminMemberList .admin-row{
+  display:grid!important;
+  grid-template-columns:1fr 88px 1fr!important;
+  align-items:center!important;
+  column-gap:8px!important;
+  padding:8px 2px!important;
+}
+#adminMemberList .admin-member-profile{
+  justify-self:start!important;
+  min-width:0!important;
+}
+#adminMemberList .status-chip{
+  justify-self:center!important;
+  text-align:center!important;
+  min-width:64px!important;
+  padding:5px 8px!important;
+}
+#adminMemberList .btn-mini{
+  justify-self:end!important;
+  min-width:72px!important;
+  white-space:nowrap!important;
+}
+@media(max-width:380px){
+  #adminMemberList .admin-row{grid-template-columns:1fr 76px 1fr!important;column-gap:5px!important;}
+  #adminMemberList .status-chip{min-width:58px!important;font-size:.66rem!important;padding:5px 6px!important;}
+  #adminMemberList .btn-mini{min-width:62px!important;font-size:.68rem!important;padding:7px 8px!important;}
+}
+
+
+@media(max-width:420px){#fineReportSection .action-row{grid-template-columns:1fr 1fr!important}}
 </style>
 </head>
 <body>
@@ -119,7 +188,7 @@ body{background:linear-gradient(180deg,#edf4ff 0%,#f8fbff 48%,#dce9f8 100%);colo
   </div>
   <div class="report-section" id="fineReportSection">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;">
-      <div id="fineReportPeriod" style="font-size:.84rem;font-weight:950;color:var(--blue);line-height:1.1;white-space:nowrap;">-</div>
+      <div id="fineReportPeriod" style="font-size:.76rem;font-weight:950;color:var(--blue);line-height:1.1;white-space:nowrap;">-</div>
       <select id="reportWeekSelect" class="month-select capture-exclude" onchange="renderLastWeekReport()"></select>
     </div>
     <div id="fineReportRange" style="font-size:.73rem;color:#667085;font-weight:800;margin-bottom:10px;">-</div>
@@ -296,6 +365,16 @@ body{background:linear-gradient(180deg,#edf4ff 0%,#f8fbff 48%,#dce9f8 100%);colo
     async function manualAddRecord() {
         const name = document.getElementById('nameSelect').value;
         if(!name) return alert("이름을 선택하세요.");
+
+        const todayStr = getTodayStr();
+        if(selectedDate > todayStr) {
+            const okFuture = confirm(`선택한 날짜 ${selectedDate}는 미래 날짜입니다.
+
+미래 날짜에는 수동 기록 추가를 권장하지 않습니다.
+그래도 추가하시겠습니까?`);
+            if(!okFuture) return;
+        }
+
         if(confirm(`[${name}]님에게 ${selectedDate} 기록을 즉시 추가하시겠습니까?`)) {
             let list = [...allData];
             list.push({ name, date: selectedDate, start: "수동", end: "완료" });
@@ -483,7 +562,7 @@ body{background:linear-gradient(180deg,#edf4ff 0%,#f8fbff 48%,#dce9f8 100%);colo
             const monStr = formatDateObj(cur);
             const sun = new Date(cur);
             sun.setDate(sun.getDate() + 6);
-            const label = `${cur.getFullYear()}년 ${cur.getMonth()+1}월 ${getWeekOfMonth(cur)}주차 (${cur.getMonth()+1}/${cur.getDate()}~${sun.getMonth()+1}/${sun.getDate()})`;
+            const label = `${String(cur.getFullYear()).slice(2)}년 ${cur.getMonth()+1}월 ${getWeekOfMonth(cur)}주 (${cur.getMonth()+1}/${cur.getDate()}~${sun.getMonth()+1}/${sun.getDate()})`;
             options.push({value: monStr, label});
             cur.setDate(cur.getDate() - 7);
         }
@@ -505,7 +584,7 @@ body{background:linear-gradient(180deg,#edf4ff 0%,#f8fbff 48%,#dce9f8 100%);colo
         const reportWeek = getWeekOfMonth(lastMonDate);
         const reportPeriodEl = document.getElementById('fineReportPeriod');
         const reportRangeEl = document.getElementById('fineReportRange');
-        if (reportPeriodEl) reportPeriodEl.textContent = `${reportYear}년 ${reportMonth}월 ${reportWeek}주차 벌금 리포트`;
+        if (reportPeriodEl) reportPeriodEl.textContent = `${String(reportYear).slice(2)}년 ${reportMonth}월 ${reportWeek}주 벌금 리포트`;
         if (reportRangeEl) reportRangeEl.textContent = `집계기간 ${lastMonDate.getMonth()+1}/${lastMonDate.getDate()} ~ ${lastSunDate.getMonth()+1}/${lastSunDate.getDate()}`;
 
         let html = "";
@@ -983,7 +1062,7 @@ function renderTable(data) {
       if(s.globalIng) { const ingDate=safeDate(s.globalIng.date); const ingIdx=ingDate.getDay()===0?6:ingDate.getDay()-1; if(ingIdx===idx) { cls='day-badge ing'; text='ing'; } }
       return `<span class="${cls}" onclick="editLog('${s.name}', ${idx})">${text}</span>`;
     }).join('');
-    const rankText = s.isOff ? '제외' : (++activeRank);
+    const rankText = s.isOff ? '휴식중' : (++activeRank);
     html += `<tr class="data-row ${s.name===selectedName?'me':''} ${s.globalIng?'is-working':''} ${s.isOff?'is-disabled':''}"><td class="rank">${rankText}</td><td class="member-name">${s.name}${s.isOff?'<br><small>(휴식)</small>':''}</td><td><div class="days">${badges}</div></td><td class="fine-blue">${s.cnt}</td><td class="${s.fine>0?'fine-red':'fine-blue'}">${s.fine.toLocaleString()}</td></tr>`;
   });
   const stat = document.getElementById('statTable'); if(stat) stat.innerHTML = html;
@@ -1055,13 +1134,41 @@ function buildFineReportText() {
 
 async function copyFineReportText() {
   const text = buildFineReportText();
+  await copyTextFallback(text);
+  const goShare = confirm('복사되었습니다.\n\n추가로 카톡방에 공유하시겠습니까?');
+  if (goShare) shareFineReportTextToKakao(text);
+}
+
+async function shareFineReportTextToKakao(sharedText) {
+  const text = sharedText || buildFineReportText();
+  try {
+    if (!(window.Kakao && Kakao.isInitialized())) {
+      await copyTextFallback(text);
+      alert('카카오 공유를 사용할 수 없어 텍스트를 복사했습니다. 카톡방에 붙여넣어 주세요.');
+      return;
+    }
+    Kakao.Share.sendDefault({
+      objectType: 'text',
+      text: text,
+      link: { mobileWebUrl: window.location.href, webUrl: window.location.href }
+    });
+  } catch (err) {
+    console.error(err);
+    await copyTextFallback(text);
+    alert('카카오 공유창을 열지 못해 텍스트를 복사했습니다. 카톡방에 붙여넣어 주세요.');
+  }
+}
+
+async function copyTextFallback(text) {
   try {
     await navigator.clipboard.writeText(text);
-    alert('카톡용 벌금 리포트 텍스트를 복사했습니다.');
   } catch (err) {
     const ta = document.createElement('textarea');
-    ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
-    alert('카톡용 벌금 리포트 텍스트를 복사했습니다.');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
   }
 }
 
@@ -1224,7 +1331,7 @@ function populateReportWeekSelect(forceFirst=false) {
       const monStr = formatDateObj(cur);
       const sun = new Date(cur);
       sun.setDate(sun.getDate() + 6);
-      const label = `${cur.getFullYear()}년 ${cur.getMonth()+1}월 ${getWeekOfMonth(cur)}주차 (${cur.getMonth()+1}/${cur.getDate()}~${sun.getMonth()+1}/${sun.getDate()})`;
+      const label = `${String(cur.getFullYear()).slice(2)}년 ${cur.getMonth()+1}월 ${getWeekOfMonth(cur)}주 (${cur.getMonth()+1}/${cur.getDate()}~${sun.getMonth()+1}/${sun.getDate()})`;
       options.push({value: monStr, label});
     }
     cur.setDate(cur.getDate() - 7);
@@ -1262,7 +1369,7 @@ function renderLastWeekReport() {
   const reportWeek = getWeekOfMonth(lastMonDate);
   const reportPeriodEl = document.getElementById('fineReportPeriod');
   const reportRangeEl = document.getElementById('fineReportRange');
-  if (reportPeriodEl) reportPeriodEl.textContent = `${reportYear}년 ${reportMonth}월 ${reportWeek}주차 벌금 리포트`;
+  if (reportPeriodEl) reportPeriodEl.textContent = `${String(reportYear).slice(2)}년 ${reportMonth}월 ${reportWeek}주 벌금 리포트`;
   if (reportRangeEl) reportRangeEl.textContent = `집계기간 ${lastMonDate.getMonth()+1}/${lastMonDate.getDate()} ~ ${lastSunDate.getMonth()+1}/${lastSunDate.getDate()}`;
 
   let html = '';
