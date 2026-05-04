@@ -687,7 +687,7 @@ body{padding-bottom:82px!important}
             document.getElementById('actionMsg').innerText = "공유하기를 누르면 사진 선택 화면이 열립니다. 사진을 선택하면 운동 시작을 저장한 뒤 카톡 공유를 진행합니다.";
             document.getElementById('actionConfirmBtn').textContent = '공유하기';
         } else {
-            document.getElementById('actionConfirmBtn').textContent = '저장하기';
+            document.getElementById('actionConfirmBtn').textContent = '공유하기';
             if(!globalIng) return alert("진행 중인 운동이 없습니다.");
             const startParts = globalIng.start.split(':');
             const startTime = safeDate(globalIng.date);
@@ -695,9 +695,9 @@ body{padding-bottom:82px!important}
             const diff = Math.floor((new Date() - startTime) / 60000);
             document.getElementById('actionTitle').innerText = "기록 종료 💪";
             if(diff < 50) {
-                document.getElementById('actionMsg').innerHTML = `<b style='color:var(--danger)'>현재 ${diff < 0 ? 0 : diff}분 진행됨.</b><br>50분 미달입니다. 종료하시겠습니까?`;
+                document.getElementById('actionMsg').innerHTML = `<b style='color:var(--danger)'>현재 ${diff < 0 ? 0 : diff}분 진행됨.</b><br>공유하기를 누르면 사진 선택 화면이 열리고, 사진 선택 후 운동 종료를 저장합니다.`;
                 confirmArea.style.display = 'block';
-            } else { document.getElementById('actionMsg').innerText = `${diff}분 완료! 저장 후 공유 여부를 물어봅니다.`; confirmCheck.checked = true; }
+            } else { document.getElementById('actionMsg').innerText = `${diff}분 완료! 공유하기를 누르면 사진 선택 화면이 열리고, 사진 선택 후 운동 종료를 저장합니다.`; confirmCheck.checked = true; }
         }
         document.getElementById('actionModal').style.display = 'flex';
     }
@@ -921,21 +921,43 @@ body{padding-bottom:82px!important}
             photoInput.click();
 
         } else {
-            try {
+            const activeRecord = allData.find(r => r.name === name && r.end === "");
+            const minutes = getElapsedMinutesFromRecord(activeRecord);
+            const photoInput = document.getElementById('kakaoPhotoInput');
+
+            photoInput.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) {
+                    photoInput.value = '';
+                    confirmBtn.disabled = false;
+                    confirmBtn.textContent = '공유하기';
+                    return;
+                }
+
                 confirmBtn.disabled = true;
-                confirmBtn.textContent = '저장 중...';
-                const activeRecord = allData.find(r => r.name === name && r.end === "");
-                const minutes = getElapsedMinutesFromRecord(activeRecord);
-                await executeSave(type, name);
-                closeActionModal();
-                askEndShareAfterSave(name, minutes);
-            } catch (err) {
-                console.error(err);
-                alert('운동 종료 저장 중 오류가 발생했습니다. 다시 시도해주세요.');
-            } finally {
-                confirmBtn.disabled = false;
-                confirmBtn.textContent = '저장하기';
-            }
+                confirmBtn.textContent = '종료 저장 중...';
+
+                try {
+                    await executeSave(type, name);
+                    closeActionModal();
+                    try {
+                        await shareWorkoutPhotoToKakao(name, file, 'END', minutes);
+                    } catch (shareErr) {
+                        console.error(shareErr);
+                        alert('사진 공유에 실패했습니다. 스스로 카톡방에 사진을 올려주세요!');
+                    }
+                } catch (err) {
+                    console.error(err);
+                    alert('운동 종료 저장 중 오류가 발생했습니다. 다시 시도해주세요.');
+                } finally {
+                    photoInput.value = '';
+                    confirmBtn.disabled = false;
+                    confirmBtn.textContent = '공유하기';
+                }
+            };
+
+            // 종료도 시작과 동일하게 버튼 클릭 직후 사진 선택창을 바로 엽니다.
+            photoInput.click();
         }
     };
 
