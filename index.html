@@ -853,27 +853,23 @@ body{padding-bottom:82px!important}
     }
 
     function askEndShareAfterSave(name, minutes) {
-        const goShare = confirm('운동 종료가 저장되었습니다.\n카톡방에 운동 종료를 공유하시겠습니까?');
+        const goShare = confirm('운동 종료가 저장되었습니다.\n카톡방에 운동 종료 사진을 공유하시겠습니까?');
         if(!goShare) return;
-        const withPhoto = confirm('사진으로 공유하시겠습니까?\n확인: 사진 선택 후 공유\n취소: 텍스트로 공유');
-        if(withPhoto) {
-            const photoInput = document.getElementById('kakaoPhotoInput');
-            photoInput.onchange = async (e) => {
-                const file = e.target.files[0];
-                if(!file) { photoInput.value = ''; return; }
-                try {
-                    await shareWorkoutPhotoToKakao(name, file, 'END', minutes);
-                } catch (err) {
-                    console.error(err);
-                    alert('사진 공유에 실패했습니다. 스스로 카톡방에 사진을 올려주세요!');
-                } finally {
-                    photoInput.value = '';
-                }
-            };
-            photoInput.click();
-        } else {
-            shareWorkoutTextToKakao(name, 'END', minutes);
-        }
+
+        const photoInput = document.getElementById('kakaoPhotoInput');
+        photoInput.onchange = async (e) => {
+            const file = e.target.files[0];
+            if(!file) { photoInput.value = ''; return; }
+            try {
+                await shareWorkoutPhotoToKakao(name, file, 'END', minutes);
+            } catch (err) {
+                console.error(err);
+                alert('사진 공유에 실패했습니다. 스스로 카톡방에 사진을 올려주세요!');
+            } finally {
+                photoInput.value = '';
+            }
+        };
+        photoInput.click();
     }
 
     // [핵심 로직] 시작 시 사진 선택 및 카카오톡 공유 처리
