@@ -684,8 +684,10 @@ body{padding-bottom:82px!important}
             if(globalIng) return alert(`종료되지 않은 기록이 있습니다.`);
             if(todayIdx > -1) return alert("이미 완료된 날짜입니다.");
             document.getElementById('actionTitle').innerText = "기록 시작 🔥";
-            document.getElementById('actionMsg').innerText = "운동 시작을 저장합니다.";
+            document.getElementById('actionMsg').innerText = "공유하기를 누르면 사진 선택 화면이 열립니다. 사진을 선택하면 운동 시작을 저장한 뒤 카톡 공유를 진행합니다.";
+            document.getElementById('actionConfirmBtn').textContent = '공유하기';
         } else {
+            document.getElementById('actionConfirmBtn').textContent = '저장하기';
             if(!globalIng) return alert("진행 중인 운동이 없습니다.");
             const startParts = globalIng.start.split(':');
             const startTime = safeDate(globalIng.date);
@@ -701,59 +703,35 @@ body{padding-bottom:82px!important}
     }
 
 
-    function canvasToJpegBlob(canvas, quality) {
-        return new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality));
-    }
-
-    async function resizeImageForKakao(file, maxBytes = 1024 * 1024) {
-        if (!file || !file.type || !file.type.startsWith('image/')) throw new Error('이미지 파일이 아닙니다.');
-
-        const img = new Image();
-        const url = URL.createObjectURL(file);
-        try {
-            await new Promise((resolve, reject) => {
-                img.onload = resolve;
-                img.onerror = () => reject(new Error('이미지를 불러오지 못했습니다.'));
-                img.src = url;
-            });
-
-            let maxSize = 1280;
-            let quality = 0.82;
-            let bestBlob = null;
-
-            for (let attempt = 0; attempt < 12; attempt++) {
-                const ratio = Math.min(1, maxSize / Math.max(img.width, img.height));
-                const width = Math.max(1, Math.round(img.width * ratio));
-                const height = Math.max(1, Math.round(img.height * ratio));
-                const canvas = document.createElement('canvas');
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
-
-                const blob = await canvasToJpegBlob(canvas, quality);
-                if (!blob) throw new Error('이미지 압축에 실패했습니다.');
-                bestBlob = blob;
-
-                if (blob.size <= maxBytes) {
-                    return new File([blob], 'workout-start.jpg', { type: 'image/jpeg' });
+    function resizeImageForKakao(file, maxSize = 1280, quality = 0.82) {
+        return new Promise((resolve, reject) => {
+            if (!file || !file.type || !file.type.startsWith('image/')) return reject(new Error('이미지 파일이 아닙니다.'));
+            const img = new Image();
+            const url = URL.createObjectURL(file);
+            img.onload = () => {
+                try {
+                    let { width, height } = img;
+                    const ratio = Math.min(1, maxSize / Math.max(width, height));
+                    width = Math.round(width * ratio);
+                    height = Math.round(height * ratio);
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    canvas.toBlob(blob => {
+                        URL.revokeObjectURL(url);
+                        if (!blob) return reject(new Error('이미지 압축에 실패했습니다.'));
+                        resolve(new File([blob], 'workout-start.jpg', { type: 'image/jpeg' }));
+                    }, 'image/jpeg', quality);
+                } catch (err) {
+                    URL.revokeObjectURL(url);
+                    reject(err);
                 }
-
-                if (quality > 0.48) {
-                    quality -= 0.08;
-                } else {
-                    maxSize = Math.round(maxSize * 0.82);
-                    quality = 0.72;
-                }
-            }
-
-            if (bestBlob && bestBlob.size <= maxBytes * 1.05) {
-                return new File([bestBlob], 'workout-start.jpg', { type: 'image/jpeg' });
-            }
-            throw new Error('사진을 1MB 이하로 압축하지 못했습니다. 더 작은 사진을 선택해주세요.');
-        } finally {
-            URL.revokeObjectURL(url);
-        }
+            };
+            img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('이미지를 불러오지 못했습니다.')); };
+            img.src = url;
+        });
     }
 
     // [핵심 로직] 시작 시 사진 선택 및 카카오톡 공유 처리
@@ -763,20 +741,64 @@ body{padding-bottom:82px!important}
         if(type === 'END' && document.getElementById('shortTimeConfirm').style.display === 'block' && !document.getElementById('confirmCheck').checked) return alert("확인 체크박스에 체크해주세요.");
         
         if (type === 'START') {
-            try {
+            const photoInput = document.getElementById('kakaoPhotoInput');
+            
+            // 사진 선택 이벤트 핸들러 설정
+            photoInput.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) {
+                    photoInput.value = "";
+                    return;
+                }
+
                 confirmBtn.disabled = true;
                 confirmBtn.textContent = '시작 저장 중...';
-                await executeSave(type, name);
-                closeActionModal();
-                askPhotoShareAfterWorkoutStart(name);
-            } catch (err) {
-                console.error(err);
-                alert('운동 시작 저장 중 오류가 발생했습니다. 다시 시도해주세요.');
-            } finally {
-                confirmBtn.disabled = false;
-                confirmBtn.textContent = '저장하기';
-            }
+
+                try {
+                    // 1. 운동 시작 기록은 먼저 저장
+                    await executeSave(type, name);
+                    closeActionModal();
+
+                    // 2. 사진 선택 직후 자동 공유하지 않고, 사용자가 한 번 더 확인한 뒤 카카오 공유 실행
+                    const goShare = confirm('운동 시작이 저장되었습니다.\n추가로 카톡방에 사진을 공유하시겠습니까?');
+                    if (goShare) {
+                        try {
+                            if (window.Kakao && Kakao.isInitialized()) {
+                                const kakaoFile = await resizeImageForKakao(file);
+                                const res = await Kakao.Share.uploadImage({ file: [kakaoFile] });
+                                const imageUrl = res?.infos?.original?.url;
+                                Kakao.Share.sendDefault({
+                                    objectType: 'feed',
+                                    content: {
+                                        title: '🔥 운동 시작!',
+                                        description: `${name}님이 운동을 시작합니다! 모두 응원해주세요!`,
+                                        imageUrl: imageUrl,
+                                        link: { mobileWebUrl: window.location.href, webUrl: window.location.href }
+                                    },
+                                });
+                            } else {
+                                alert('카카오톡 공유 기능을 불러오지 못했습니다. 운동 시작 기록은 저장되었습니다.');
+                            }
+                        } catch (shareErr) {
+                            console.error(shareErr);
+                            alert('사진 공유에 실패했습니다. 스스로 카톡방에 사진을 올려주세요!');
+                        }
+                    }
+                } catch (err) {
+                    console.error(err);
+                    alert('운동 시작 저장 중 오류가 발생했습니다. 다시 시도해주세요.');
+                } finally {
+                    photoInput.value = ""; // 인풋 초기화
+                    confirmBtn.disabled = false;
+                    confirmBtn.textContent = '공유하기';
+                }
+            };
+            
+            // 사진 앨범 열기
+            photoInput.click();
+
         } else {
+            // 종료(END)는 기존과 동일하게 바로 저장
             try {
                 confirmBtn.disabled = true;
                 confirmBtn.textContent = '저장 중...';
@@ -928,83 +950,6 @@ function getWorkoutElapsed(record) {
   return Math.max(0, Math.floor((new Date() - st) / 60000));
 }
 
-
-async function shareWorkoutStartPhoto(file, name) {
-  try {
-    if (window.Kakao && Kakao.isInitialized()) {
-      const kakaoFile = await resizeImageForKakao(file, 1024 * 1024);
-      console.log('카카오 공유용 압축 사진 크기:', Math.round(kakaoFile.size / 1024) + 'KB');
-      const res = await Kakao.Share.uploadImage({ file: [kakaoFile] });
-      const imageUrl = res?.infos?.original?.url;
-      Kakao.Share.sendDefault({
-        objectType: 'feed',
-        content: {
-          title: '🔥 운동 시작!',
-          description: `${name}님이 운동을 시작합니다! 모두 응원해주세요!`,
-          imageUrl: imageUrl,
-          link: { mobileWebUrl: window.location.href, webUrl: window.location.href }
-        }
-      });
-    } else {
-      alert('카카오톡 공유 기능을 불러오지 못했습니다. 운동 시작 기록은 저장되었습니다.');
-    }
-  } catch (shareErr) {
-    console.error(shareErr);
-    try {
-      if (window.Kakao && Kakao.isInitialized()) {
-        const fallback = confirm('사진 공유창을 여는 데 실패했습니다. 텍스트로 대신 공유하시겠습니까?');
-        if (fallback) {
-          Kakao.Share.sendDefault({
-            objectType: 'text',
-            text: `🔥 ${name}님이 운동을 시작했습니다!`,
-            link: { mobileWebUrl: window.location.href, webUrl: window.location.href }
-          });
-        }
-      } else {
-        alert('운동 시작은 저장되었고, 카카오톡 공유만 실패했습니다.');
-      }
-    } catch (textShareErr) {
-      console.error(textShareErr);
-      alert('운동 시작은 저장되었고, 카카오톡 공유만 실패했습니다. 카톡 안에서 실행 중이면 외부 브라우저에서 다시 시도해보세요.');
-    }
-  }
-}
-
-function openWorkoutPhotoPickerForShare(name) {
-  const photoInput = document.getElementById('kakaoPhotoInput');
-  if (!photoInput) return alert('사진 선택 기능을 찾을 수 없습니다.');
-  photoInput.onchange = async (e) => {
-    const file = e.target.files && e.target.files[0];
-    photoInput.value = '';
-    if (!file) return;
-    await shareWorkoutStartPhoto(file, name);
-  };
-  photoInput.click();
-}
-
-function askPhotoShareAfterWorkoutStart(name) {
-  const inKakao = /KAKAOTALK/i.test(navigator.userAgent || '');
-  const msg = inKakao
-    ? '운동이 시작되었습니다.\n\n카톡 안에서 열린 화면에서는 사진 공유창이 안 뜰 수 있습니다.\n카톡방에 사진을 공유하시겠습니까?'
-    : '운동이 시작되었습니다.\n\n카톡방에 사진을 공유하시겠습니까?';
-  if (confirm(msg)) openWorkoutPhotoPickerForShare(name);
-}
-
-async function startWorkoutDirectly(name) {
-  const btn = document.getElementById('primaryActionBtn');
-  try {
-    if (btn) { btn.disabled = true; btn.textContent = '시작 저장 중...'; }
-    selectedDate = getTodayStr();
-    await executeSave('START', name);
-    askPhotoShareAfterWorkoutStart(name);
-  } catch (err) {
-    console.error(err);
-    alert('운동 시작 저장 중 오류가 발생했습니다. 다시 시도해주세요.');
-  } finally {
-    if (btn) { btn.disabled = false; updateHero(lastSummary); }
-  }
-}
-
 function handlePrimaryAction() {
   const name = getSelectedName();
   if(!name) return alert('이름을 선택하세요.');
@@ -1013,7 +958,7 @@ function handlePrimaryAction() {
   selectedDate = getTodayStr();
   if(globalIng) openActionModal('END');
   else if(completedToday) alert('오늘은 이미 운동 완료되었습니다.');
-  else startWorkoutDirectly(name);
+  else openActionModal('START');
 }
 
 function updateProfileAvatar(name) {
