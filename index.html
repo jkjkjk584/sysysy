@@ -1627,6 +1627,10 @@ body{padding-bottom:82px!important}
     const db = firebase.database();
     
     const dataPath = db.ref('sy_master_v34'); 
+    const backupPath = db.ref('sy_master_v34_backups');
+    const metaPath = db.ref('sy_master_v34_meta');
+    const AUTO_BACKUP_INTERVAL_MS = 2 * 24 * 60 * 60 * 1000;
+    const AUTO_BACKUP_LOCK_MS = 2 * 60 * 1000;
     const payPath = db.ref('sy_payments_v34');
     const adminPath = db.ref('sy_admin_v34');
     const photoPath = db.ref('sy_member_photos_v34');
@@ -1653,6 +1657,174 @@ body{padding-bottom:82px!important}
 
     const FINE_START_DATE = "2026-03-09";
 
+    let hasLoadedMasterData = false;
+    let hasCheckedAutoBackup = false;
+
+    // ===== DB 안전장치 =====
+    // 기존 코드는 dataPath.set(list)로 sy_master_v34 전체를 덮어써서,
+    // allData가 비어 있거나 일부만 로딩된 상태에서 저장하면 과거 데이터가 사라질 수 있었습니다.
+    // 아래 함수들은 기존 데이터를 통째로 set 하지 않고, 한 건 추가/한 건 수정/선택 삭제만 수행합니다.
+    function normalizeMasterRecords(raw) {
+        if (!raw) return [];
+        if (Array.isArray(raw)) {
+            return raw
+                .map((r, i) => (r && typeof r === 'object') ? { ...r, _key: String(i) } : null)
+                .filter(Boolean);
+        }
+        if (typeof raw === 'object') {
+            return Object.keys(raw)
+                .map(k => {
+                    const r = raw[k];
+                    return (r && typeof r === 'object') ? { ...r, _key: k } : null;
+                })
+                .filter(Boolean);
+        }
+        return [];
+    }
+
+    function cleanRecordForDb(record) {
+        const copy = { ...record };
+        delete copy._key;
+        return copy;
+    }
+
+    function backupKey(reason) {
+        const now = new Date();
+        const y = now.getFullYear();
+        const mo = String(now.getMonth() + 1).padStart(2, '0');
+        const d = String(now.getDate()).padStart(2, '0');
+        const h = String(now.getHours()).padStart(2, '0');
+        const mi = String(now.getMinutes()).padStart(2, '0');
+        const se = String(now.getSeconds()).padStart(2, '0');
+        const safeReason = String(reason || 'write').replace(/[^a-zA-Z0-9가-힣_-]/g, '_').slice(0, 40);
+        return `${y}${mo}${d}_${h}${mi}${se}_${safeReason}`;
+    }
+
+    async function createSafetyBackup(reason) {
+        // 백업 경로 권한이 막혀 있어도 운동 저장 자체가 실패하면 안 됩니다.
+        try {
+            const snap = await dataPath.once('value');
+            await backupPath.child(backupKey(reason)).set({
+                createdAt: new Date().toISOString(),
+                reason: reason || 'write',
+                sourcePath: 'sy_master_v34',
+                data: snap.val() || null
+            });
+        } catch (err) {
+            console.warn('Safety backup skipped:', err && err.message ? err.message : err);
+        }
+    }
+
+    async function acquireAutoBackupLock() {
+        const lockRef = metaPath.child('autoBackupLock');
+        const nowMs = Date.now();
+        const result = await lockRef.transaction(current => {
+            if (current && current.lockUntil && Number(current.lockUntil) > nowMs) {
+                return; // 다른 기기에서 백업 중이면 중단
+            }
+            return {
+                lockedAt: new Date(nowMs).toISOString(),
+                lockUntil: nowMs + AUTO_BACKUP_LOCK_MS
+            };
+        });
+        return !!(result && result.committed);
+    }
+
+    async function releaseAutoBackupLock() {
+        try { await metaPath.child('autoBackupLock').set(null); } catch (err) {}
+    }
+
+    async function maybeCreateAutoBackup() {
+        // 앱이 열렸을 때 마지막 자동 백업 후 2일이 지났으면 sy_master_v34 전체 사본을 남깁니다.
+        // 여러 사람이 동시에 접속해도 lock + 재확인으로 중복 백업을 최소화합니다.
+        let hasLock = false;
+        try {
+            const metaSnap = await metaPath.child('autoBackup').once('value');
+            const meta = metaSnap.val() || {};
+            const lastMs = meta.lastBackupAt ? new Date(meta.lastBackupAt).getTime() : 0;
+            const nowMs = Date.now();
+            if (lastMs && !Number.isNaN(lastMs) && nowMs - lastMs < AUTO_BACKUP_INTERVAL_MS) return false;
+
+            hasLock = await acquireAutoBackupLock();
+            if (!hasLock) return false;
+
+            const metaCheckSnap = await metaPath.child('autoBackup').once('value');
+            const metaCheck = metaCheckSnap.val() || {};
+            const lastCheckMs = metaCheck.lastBackupAt ? new Date(metaCheck.lastBackupAt).getTime() : 0;
+            if (lastCheckMs && !Number.isNaN(lastCheckMs) && nowMs - lastCheckMs < AUTO_BACKUP_INTERVAL_MS) return false;
+
+            const dataSnap = await dataPath.once('value');
+            const nowIso = new Date().toISOString();
+            const key = backupKey('auto_2day');
+            await backupPath.child(key).set({
+                createdAt: nowIso,
+                reason: 'auto_2day',
+                intervalDays: 2,
+                sourcePath: 'sy_master_v34',
+                data: dataSnap.val() || null
+            });
+            await metaPath.child('autoBackup').set({
+                lastBackupAt: nowIso,
+                lastBackupKey: key,
+                intervalDays: 2,
+                sourcePath: 'sy_master_v34'
+            });
+            console.log('2-day auto backup created:', key);
+            return true;
+        } catch (err) {
+            console.warn('2-day auto backup skipped:', err && err.message ? err.message : err);
+            return false;
+        } finally {
+            if (hasLock) await releaseAutoBackupLock();
+        }
+    }
+
+    async function safeAddMasterRecord(record, reason) {
+        if (!hasLoadedMasterData) throw new Error('DB 데이터가 아직 로딩되지 않았습니다. 잠시 후 다시 시도하세요.');
+        await createSafetyBackup(reason || 'add_record');
+        await dataPath.push(cleanRecordForDb(record));
+    }
+
+    async function safeUpdateMasterRecord(key, patch, reason) {
+        if (!key && key !== 0) throw new Error('수정할 기록 키를 찾지 못했습니다.');
+        if (!hasLoadedMasterData) throw new Error('DB 데이터가 아직 로딩되지 않았습니다. 잠시 후 다시 시도하세요.');
+        await createSafetyBackup(reason || 'update_record');
+        await dataPath.child(String(key)).update(patch);
+    }
+
+    async function safeRemoveMasterRecords(keys, reason) {
+        const validKeys = (keys || []).filter(k => k !== undefined && k !== null && String(k) !== '');
+        if (!validKeys.length) throw new Error('삭제할 기록 키를 찾지 못했습니다.');
+        if (!hasLoadedMasterData) throw new Error('DB 데이터가 아직 로딩되지 않았습니다. 잠시 후 다시 시도하세요.');
+        await createSafetyBackup(reason || 'remove_record');
+        const updates = {};
+        validKeys.forEach(k => { updates[String(k)] = null; });
+        await dataPath.update(updates);
+    }
+
+    function masterRecordSignature(r) {
+        return [r.name || '', r.date || '', r.start || '', r.end || ''].join('|');
+    }
+
+    async function safeImportMasterRecords(importedData) {
+        if (!hasLoadedMasterData) throw new Error('DB 데이터가 아직 로딩되지 않았습니다. 잠시 후 다시 시도하세요.');
+        await createSafetyBackup('csv_import_before_merge');
+        const existing = new Set((allData || []).map(masterRecordSignature));
+        const updates = {};
+        let added = 0;
+        (importedData || []).forEach(r => {
+            if (!r || !r.name || !r.date) return;
+            const clean = cleanRecordForDb(r);
+            const sig = masterRecordSignature(clean);
+            if (existing.has(sig)) return;
+            existing.add(sig);
+            updates[dataPath.push().key] = clean;
+            added++;
+        });
+        if (added > 0) await dataPath.update(updates);
+        return added;
+    }
+
     function safeDate(dateStr) {
         if (!dateStr) return new Date();
         return new Date(dateStr.replace(/-/g, '/') + ' 12:00:00');
@@ -1678,7 +1850,16 @@ body{padding-bottom:82px!important}
         renderWeekCards();
         updateHeaderTitle();
         
-        dataPath.on('value', snap => { allData = snap.val() || []; renderTable(allData); renderCalendar(); });
+        dataPath.on('value', snap => {
+            allData = normalizeMasterRecords(snap.val());
+            hasLoadedMasterData = true;
+            renderTable(allData);
+            renderCalendar();
+            if (!hasCheckedAutoBackup) {
+                hasCheckedAutoBackup = true;
+                maybeCreateAutoBackup();
+            }
+        });
         payPath.on('value', snap => { paymentData = snap.val() || {}; if(document.getElementById('historyView').style.display === 'block') renderLastWeekReport(); });
         adminPath.on('value', snap => { adminSettings = snap.val() || {}; renderAdminList(); renderTable(allData); });
         photoPath.on('value', snap => { memberPhotoData = snap.val() || {}; updateProfileAvatar(getSelectedName()); renderAdminList(); renderNamePickerList(); });
@@ -1700,9 +1881,7 @@ body{padding-bottom:82px!important}
         }
 
         if(confirm(`[${name}]님에게 ${selectedDate} 기록을 즉시 추가하시겠습니까?`)) {
-            let list = [...allData];
-            list.push({ name, date: selectedDate, start: "수동", end: "완료" });
-            await dataPath.set(list);
+            await safeAddMasterRecord({ name, date: selectedDate, start: "수동", end: "완료" }, `manual_add_${name}`);
             alert("기록이 추가되었습니다.");
         }
     }
@@ -1901,7 +2080,7 @@ function renderAdminList() {
     }
 
     async function savePayments() {
-        await payPath.set(paymentData);
+        await payPath.update(paymentData);
         alert("납부 상태가 저장되었습니다.");
     }
 
@@ -2037,17 +2216,23 @@ function renderAdminList() {
         document.getElementById('totalAccumulatedBody').innerHTML = html;
     }
 
-    function editLog(name, dayIdx) {
+    async function editLog(name, dayIdx) {
         const startDay = safeDate(getMonday(selectedDate));
         const targetDate = new Date(startDay);
         targetDate.setDate(startDay.getDate() + dayIdx);
         const dateStr = targetDate.getFullYear() + '-' + String(targetDate.getMonth() + 1).padStart(2, '0') + '-' + String(targetDate.getDate()).padStart(2, '0');
         
-        const record = allData.find(r => r.name === name && r.date === dateStr);
-        if(!record) return;
-        if(confirm(`[${name}] ${dateStr} 기록을 삭제할까요?`)) {
-            const newList = allData.filter(r => !(r.name === name && r.date === dateStr));
-            dataPath.set(newList);
+        const records = allData.filter(r => r.name === name && r.date === dateStr);
+        if(!records.length) return;
+        if(confirm(`[${name}] ${dateStr} 기록을 삭제할까요?
+
+※ 전체 DB를 덮어쓰지 않고 해당 기록만 삭제합니다.`)) {
+            try {
+                await safeRemoveMasterRecords(records.map(r => r._key), `delete_log_${name}_${dateStr}`);
+            } catch (err) {
+                console.error(err);
+                alert(err.message || '기록 삭제 중 오류가 발생했습니다.');
+            }
         }
     }
 
@@ -2350,10 +2535,14 @@ function renderAdminList() {
     async function executeSave(type, name) {
         const now = new Date();
         const time = now.getHours().toString().padStart(2,'0') + ":" + now.getMinutes().toString().padStart(2,'0') + ":" + now.getSeconds().toString().padStart(2,'0');
-        let list = [...allData];
-        if(type === 'START') list.push({ name, date: selectedDate, start: time, end: "" });
-        else { const idx = list.findIndex(r => r.name === name && r.end === ""); if(idx > -1) list[idx].end = time; }
-        await dataPath.set(list);
+        if(type === 'START') {
+            await safeAddMasterRecord({ name, date: selectedDate, start: time, end: "" }, `start_${name}`);
+            return;
+        }
+
+        const openRecord = allData.find(r => r.name === name && r.end === "");
+        if(!openRecord) throw new Error('종료할 진행 중 기록을 찾지 못했습니다. 화면을 새로고침한 뒤 다시 확인하세요.');
+        await safeUpdateMasterRecord(openRecord._key, { end: time }, `end_${name}`);
     }
 
     function renderWeekCards() {
@@ -2396,16 +2585,11 @@ function renderAdminList() {
     function closeActionModal() { document.getElementById('actionModal').style.display = 'none'; }
     function toggleView(id, show) { document.getElementById(id).style.display = show ? 'block' : 'none'; }
     async function resetData() {
-  if(!confirm('전체 데이터(납부, 활동중지 포함)를 초기화하시겠습니까?')) return;
-  const pw = prompt('전체 초기화 비밀번호를 입력하세요.');
-  if(pw === null) return;
-  if(String(pw).trim() !== '0560') { alert('비밀번호가 올바르지 않습니다.'); return; }
-  await dataPath.set(null);
-  await payPath.set(null);
-  await adminPath.set(null);
-  localStorage.removeItem('sy_selected_name');
-  alert('전체 데이터가 초기화되었습니다.');
-}
+        alert(`안전장치 적용됨: 전체 초기화 기능은 비활성화했습니다.
+
+이전 코드의 dataPath.set(null)이 전체 데이터를 삭제할 수 있어 제거했습니다.
+정말 초기화가 필요하면 Firebase 콘솔에서 JSON 백업을 먼저 받은 뒤 수동으로 처리하세요.`);
+    }
     
     function downloadCSV() {
         let csv = "\uFEFF이름,날짜,시작시간,종료시간\n";
@@ -2438,8 +2622,9 @@ function renderAdminList() {
                 });
             }
             if (confirm(`${importedData.length}개 데이터를 복구할까요?`)) {
-                await dataPath.set(importedData);
-                await payPath.set(paymentData);
+                const addedCount = await safeImportMasterRecords(importedData);
+                await payPath.update(paymentData);
+                alert(`복구 완료: 새로 추가된 운동기록 ${addedCount}개`);
             }
         };
         reader.readAsText(file);
