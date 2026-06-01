@@ -2090,8 +2090,10 @@ function renderAdminList() {
     }
 
     function getWeekOfMonth(dateObj) {
-        const firstDay = new Date(dateObj.getFullYear(), dateObj.getMonth(), 1);
-        return Math.ceil((dateObj.getDate() + firstDay.getDay() - 1) / 7);
+        const firstDay = new Date(dateObj.getFullYear(), dateObj.getMonth(), 1, 12, 0, 0);
+        let firstDow = firstDay.getDay();
+        const mondayBasedOffset = firstDow === 0 ? 6 : firstDow - 1;
+        return Math.ceil((dateObj.getDate() + mondayBasedOffset) / 7);
     }
 
     function formatDateObj(dateObj) {
@@ -3001,7 +3003,7 @@ function tick() {
 }
 
 function updateHeaderTitle() {
-  const now = new Date(); const firstDay = new Date(now.getFullYear(), now.getMonth(), 1); const wk = Math.ceil((now.getDate() + firstDay.getDay() - 1) / 7);
+  const now = new Date(); const firstDay = new Date(now.getFullYear(), now.getMonth(), 1, 12, 0, 0); const fd=firstDay.getDay(); const wk = Math.ceil((now.getDate() + (fd===0?6:fd-1)) / 7);
   const el=document.getElementById('mainTitle'); if(el) el.textContent = `${now.getMonth()+1}월 ${wk}주차`;
 }
 
@@ -3015,17 +3017,30 @@ init = function() {
   const reportSel = document.getElementById('reportMonthSelect');
   if(reportSel && reportSel.options.length===0) {
     const now = new Date();
-    for(let mm=1; mm<=12; mm++) { const opt=document.createElement('option'); opt.value=mm; opt.text=mm+'월'; if(mm===now.getMonth()+1) opt.selected=true; reportSel.appendChild(opt); }
+    const defaultReportMonth = getDefaultReportMonth();
+    for(let mm=1; mm<=12; mm++) { const opt=document.createElement('option'); opt.value=mm; opt.text=mm+'월'; if(mm===defaultReportMonth) opt.selected=true; reportSel.appendChild(opt); }
   }
   setTimeout(() => { updateHero(lastSummary); renderPersonalDetail(); }, 50);
 };
 
 // ===== Report month sync fixes =====
+function getDefaultReportMonday() {
+  return getLastCompletedMonday();
+}
+
+function getDefaultReportMonth() {
+  return getDefaultReportMonday().getMonth() + 1;
+}
+
 function getSelectedReportYearMonth() {
   const now = new Date();
   const sel = document.getElementById('reportMonthSelect');
-  const month = sel && sel.value ? parseInt(sel.value, 10) : now.getMonth() + 1;
-  return { year: now.getFullYear(), month };
+  const defaultMon = getDefaultReportMonday();
+  const month = sel && sel.value ? parseInt(sel.value, 10) : defaultMon.getMonth() + 1;
+  let year = now.getFullYear();
+  // 1월 초에 직전 완료 주차가 전년도 12월이면 선택 월의 연도를 전년으로 보정
+  if (month > now.getMonth() + 1 && now.getMonth() + 1 <= 2) year -= 1;
+  return { year, month };
 }
 
 function weekOverlapsMonth(monDate, year, month) {
@@ -3205,6 +3220,11 @@ init = function() {
   setTimeout(() => {
     const reportSel = document.getElementById('reportMonthSelect');
     if (reportSel) {
+      // 월이 바뀐 직후(예: 6/1)에도 '저번주 벌금'은 직전 완료 주차의 월(5월)을 기본값으로 보여준다.
+      const defaultReportMonth = getDefaultReportMonth();
+      if ([...reportSel.options].some(o => parseInt(o.value, 10) === defaultReportMonth)) {
+        reportSel.value = String(defaultReportMonth);
+      }
       reportSel.onchange = refreshReportForSelectedMonth;
       refreshReportForSelectedMonth();
     }
